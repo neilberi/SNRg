@@ -15,7 +15,7 @@ PlotLastTimeSegment = 0;
 Plotdfdotvsi = 0;
 OutputFile1 = 0;
 OutputFile2 = 0;
-OutputFile3 = 0;
+OutputFile3 = 1;
 
 %% Generate Signal Spectrogram
 
