@@ -21,7 +21,7 @@ OutputFile3 = 0;
 
 % SNR1 and {SNRg_i | M<=i<=N} will be calculated
 M = 1;
-N = 150;
+N = 151;
 Ntrial = 10;
 if (OutputFile1 == 0)
     Ntrial = 1;
