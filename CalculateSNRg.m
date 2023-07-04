@@ -9,13 +9,13 @@ ParsevalSNR = 1;
 RealPartDS = 0;
 Animation = 0;
 NequalNseg = 1;
-PlotSNRvsdfdot = 0;
+PlotSNRvsdfdot = 1;
 PlotMaxSNRgvsTobs = 0;
 PlotLastTimeSegment = 0;
 Plotdfdotvsi = 0;
 OutputFile1 = 0;
 OutputFile2 = 0;
-OutputFile3 = 1;
+OutputFile3 = 0;
 
 %% Generate Signal Spectrogram
 
