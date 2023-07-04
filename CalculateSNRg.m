@@ -13,7 +13,7 @@ PlotSNRvsdfdot = 0;
 PlotMaxSNRgvsTobs = 0;
 PlotLastTimeSegment = 0;
 Plotdfdotvsi = 0;
-OutputFile1 = 1;
+OutputFile1 = 0;
 OutputFile2 = 0;
 OutputFile3 = 0;
 
