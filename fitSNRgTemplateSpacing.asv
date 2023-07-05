@@ -23,7 +23,7 @@ fitDegree = pi;
 %% Read in and configure data
 
 % Select fdot value (Hz/s)
-fdot_sig = -5.e-9; % One of the following: -5.e-7, -5.e-6, -5.e-5
+fdot_sig = -5.e-6; % One of the following: -5.e-7, -5.e-6, -5.e-5
 
 Tcoh_hr = 1./3600.*sqrt(0.5/abs(fdot_sig));
 Tcoh = Tcoh_hr * 3600.;
@@ -388,9 +388,6 @@ else
 end
 hold off;
 
-for k = 1:length(Tobsvec)
-    fprintf('Range of template spacings for i = %d: %e\n', Nsegvec(k), range(data(k:end, Nsegvec(k))))
-end
 
 %% Functions
 
@@ -412,4 +409,3 @@ function freqConstraint = calc_dfdot_freq_constraint(i, Tobs, fdot_sig, desiredF
     binWidth_eff = (i.*Tcoh).^(-1);
     freqConstraint = desiredFreqMismatch*binWidth_eff./Tobs;
 end
-
