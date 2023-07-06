@@ -8,7 +8,7 @@ close all;
 ParsevalSNR = 1;
 
 %% Read in data
-fitDegree = 3*pi;
+fitDegree = 1;
 
 if (ParsevalSNR == 1)
     filename = sprintf('TemplateSpacingFitCoeffsfitDegree_%fP.csv', fitDegree);

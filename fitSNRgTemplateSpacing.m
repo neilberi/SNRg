@@ -18,12 +18,12 @@ UseLSQCoeffs = 0;
 % Choose degree of polynomial surface fit (1, 2, 3, 
 % pi for 2 piecewise planes intersecting at constant i
 % 2*pi for 2 piecewise planes intersecting at arbitrary line parallel to i-Tobs plane)
-fitDegree = pi;
+fitDegree = 2*pi;
 
 %% Read in and configure data
 
 % Select fdot value (Hz/s)
-fdot_sig = -5.e-8; % One of the following: -5.e-7, -5.e-6, -5.e-5
+fdot_sig = -5.e-8; % One of the following: -5.e-9, -5.e-8, -5.e-7, -5.e-6, -5.e-5
 
 Tcoh_hr = 1./3600.*sqrt(0.5/abs(fdot_sig));
 Tcoh = Tcoh_hr * 3600.;
@@ -230,7 +230,7 @@ elseif (fitDegree == pi)
     elseif (fdot_sig == -5.e-8)
         lsqCoeffs = [lsqCoeffs; 0.75; lsqCoeffs(2)];
     elseif (fdot_sig == -5.e-9)
-        lsqCoeffs = [lsqCoeffs; 0.8; lsqCoeffs(2)];
+        lsqCoeffs = [lsqCoeffs; 0.5; lsqCoeffs(2)];
     end
     
     model_func = @(a, X) (a(1).*X(:, 1) + a(2).*X(:, 2) + a(3)).*(X(:, 2) < a(4)) + (a(1).*X(:, 1) + a(5).*X(:, 2) + a(2)*a(4) + a(3) - a(5)*a(4)).*(X(:, 2) >= a(4));
