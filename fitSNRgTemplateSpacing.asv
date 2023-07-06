@@ -8,7 +8,7 @@ ParsevalSNR = 1;
 Fits2D = 0;
 RunningAveSigma = 0;
 IterFitSigma = 1;
-OutputFile = 1;
+OutputFile = 0;
 
 % Choose exactly one of the following fit algorithms
 UsefitChiSquare = 1;
@@ -40,16 +40,15 @@ end
 Data = readmatrix(filenameIn);
 Tobsvec = unique(Data(:, 1));
 Nsegvec = round(Tobsvec./Tcoh_hr);
-Data = Data(:, 2:3);
 
 % Calculate uncertainties and means
 uncertainties = zeros(length(Tobsvec), max(Nsegvec));
 data = zeros(length(Tobsvec), max(Nsegvec));
 for k = 1:length(Tobsvec)
     for i = 1:Nsegvec(k)
-        %assert(length(Data(Data(:, 1)==i, 2))==Ntrials, ['Error: Incorrect number of trials for Tobs = ', num2str(Tobsvec(k)), ' hr and i = ', num2str(i)]);
-        uncertainties(k, i) = std(Data(Data(:, 1)==i, 2));
-        data(k, i) = mean(Data(Data(:, 1)==i, 2));
+        assert(length(Data((Data(:, 2)==i && Data(:, 1)==Tobsvec(k), 3))==Ntrials, ['Error: Incorrect number of trials for Tobs = ', num2str(Tobsvec(k)), ' hr and i = ', num2str(i)]);
+        uncertainties(k, i) = std(Data((Data(:, 2)==i && Data(:, 1)==Tobsvec(k)), 3));
+        data(k, i) = mean(Data((Data(:, 2)==i && Data(:, 1)==Tobsvec(k)), 3));
     end
 end
 uncertainties = uncertainties./sqrt(Ntrials);
@@ -254,15 +253,15 @@ elseif (fitDegree == 3*pi)
     lsqCoeffs = [X(:, 2), ones(size(X(:, 2)))] \ Y;
 
     if (fdot_sig == -5.e-5)
-        lsqCoeffs = [lsqCoeffs; 2.; lsqCoeffs(1)];
+        lsqCoeffs = [lsqCoeffs; 2.; -1.5];
     elseif (fdot_sig == -5.e-6)
-        lsqCoeffs = [lsqCoeffs; 1.5; lsqCoeffs(1)];
+        lsqCoeffs = [lsqCoeffs; 1.5; -2];
     elseif (fdot_sig == -5.e-7)
-        lsqCoeffs = [lsqCoeffs; 1.; lsqCoeffs(1)];
+        lsqCoeffs = [lsqCoeffs; 1.; -1.5];
     elseif (fdot_sig == -5.e-8)
-        lsqCoeffs = [lsqCoeffs; 0.75; lsqCoeffs(1)];
+        lsqCoeffs = [lsqCoeffs; 0.75; -1.5];
     elseif (fdot_sig == -5.e-9)
-        lsqCoeffs = [lsqCoeffs; 0.8; lsqCoeffs(1)];
+        lsqCoeffs = [lsqCoeffs; 0.8; -1.5];
     end
 
     model_func = @(a, X) (a(1).*X(:, 2) + a(2)).*(X(:, 2) < a(3)) + (a(4).*X(:, 2) + a(1)*a(3) + a(2) - a(4)*a(3)).*(X(:, 2) >= a(3));

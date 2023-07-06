@@ -18,7 +18,7 @@ UseLSQCoeffs = 0;
 % Choose degree of polynomial surface fit (1, 2, 3, 
 % pi for 2 piecewise planes intersecting at constant i
 % 2*pi for 2 piecewise planes intersecting at arbitrary line parallel to i-Tobs plane)
-fitDegree = 3*pi;
+fitDegree = pi;
 
 %% Read in and configure data
 
@@ -40,16 +40,16 @@ end
 Data = readmatrix(filenameIn);
 Tobsvec = unique(Data(:, 1));
 Nsegvec = round(Tobsvec./Tcoh_hr);
-Data = Data(:, 2:3);
 
 % Calculate uncertainties and means
 uncertainties = zeros(length(Tobsvec), max(Nsegvec));
 data = zeros(length(Tobsvec), max(Nsegvec));
 for k = 1:length(Tobsvec)
     for i = 1:Nsegvec(k)
-        %assert(length(Data(Data(:, 1)==i, 2))==Ntrials, ['Error: Incorrect number of trials for Tobs = ', num2str(Tobsvec(k)), ' hr and i = ', num2str(i)]);
-        uncertainties(k, i) = std(Data(Data(:, 1)==i, 2));
-        data(k, i) = mean(Data(Data(:, 1)==i, 2));
+        dataIndices = logical((Data(:, 2)==i).*(Data(:, 1)==Tobsvec(k)));
+        assert(sum(dataIndices)==Ntrials, ['Error: Incorrect number of trials for Tobs = ', num2str(Tobsvec(k)), ' hr and i = ', num2str(i)]);
+        uncertainties(k, i) = std(Data(dataIndices, 3));
+        data(k, i) = mean(Data(dataIndices, 3));
     end
 end
 uncertainties = uncertainties./sqrt(Ntrials);
@@ -256,7 +256,7 @@ elseif (fitDegree == 3*pi)
     if (fdot_sig == -5.e-5)
         lsqCoeffs = [lsqCoeffs; 2.; -1.5];
     elseif (fdot_sig == -5.e-6)
-        lsqCoeffs = [lsqCoeffs; 1.5; -1.5];
+        lsqCoeffs = [lsqCoeffs; 1.5; -2];
     elseif (fdot_sig == -5.e-7)
         lsqCoeffs = [lsqCoeffs; 1.; -1.5];
     elseif (fdot_sig == -5.e-8)
