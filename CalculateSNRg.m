@@ -43,10 +43,10 @@ noiseamp = hnoise;
 f_sig = 100.;
 
 % Signal frequency derivative (Hz/s)
-fdot_sig = -5.e-9;
+fdot_sig = -5.e-6;
 
 % Length of observation (hr)
-Tobs_hr = 40.;
+Tobs_hr = 8.;
 Tobs = Tobs_hr * 3600.;
 if (OutputFile1 == 1)
     if (ParsevalSNR == 1)

@@ -7,8 +7,8 @@ close all;
 ParsevalSNR = 1;
 Fits2D = 0;
 RunningAveSigma = 0;
-IterFitSigma = 1;
-OutputFile = 0;
+TwoFitSigma = 1;
+OutputFile = 1;
 
 % Choose exactly one of the following fit algorithms
 UsefitChiSquare = 1;
@@ -18,12 +18,12 @@ UseLSQCoeffs = 0;
 % Choose degree of polynomial surface fit (1, 2, 3, 
 % pi for 2 piecewise planes intersecting at constant i
 % 2*pi for 2 piecewise planes intersecting at arbitrary line parallel to i-Tobs plane)
-fitDegree = 2*pi;
+fitDegree = 1;
 
 %% Read in and configure data
 
 % Select fdot value (Hz/s)
-fdot_sig = -5.e-8; % One of the following: -5.e-9, -5.e-8, -5.e-7, -5.e-6, -5.e-5
+fdot_sig = -5.e-5; % One of the following: -5.e-9, -5.e-8, -5.e-7, -5.e-6, -5.e-5
 
 Tcoh_hr = 1./3600.*sqrt(0.5/abs(fdot_sig));
 Tcoh = Tcoh_hr * 3600.;
@@ -93,11 +93,11 @@ if (RunningAveSigma == 1)
     end
 end
 
-if (IterFitSigma == 1)
-    iterFitSigma = zeros(size(uncertainties));
+if (TwoFitSigma == 1)
+    twoFitSigma = zeros(size(uncertainties));
     quad_model = @(a, x) a(1)*x.^2 + a(2)*x + a(3);
     for k = 1:length(Tobsvec)
-        errorfitparams = nlinfit(log10(1:Nsegvec(k)), log10(data(k, 1:Nsegvec(k))), quad_model, 2.*rand(1, 3)-1);        
+        errorfitparams = nlinfit(log10(1:Nsegvec(k)), log10(data(k, 1:Nsegvec(k))), quad_model, [-0.8311, -0.2004, -0.4803]);        
         
         figure(1000 + k)
         p1000k = plot(log10(1:Nsegvec(k)), quad_model(errorfitparams, log10(1:Nsegvec(k))), '--r');
@@ -111,7 +111,7 @@ if (IterFitSigma == 1)
         grid on;
         hold off;
         
-        iterFitSigma(k, 1:Nsegvec(k)) = abs(log10(data(k, 1:Nsegvec(k)))-quad_model(errorfitparams, log10(1:Nsegvec(k))));
+        twoFitSigma(k, 1:Nsegvec(k)) = abs(log10(data(k, 1:Nsegvec(k)))-quad_model(errorfitparams, log10(1:Nsegvec(k))));
     end
 end
 
@@ -193,8 +193,8 @@ for m = 1:length(data(:, 1))
             Y = [Y; log10(data(m, n))];
             if (RunningAveSigma == 1)
                 dY = [dY; runningAveSigma(m, n)];
-            elseif (IterFitSigma == 1)
-                dY = [dY; sqrt((uncertainties(m, n)./data(m, n)/log(10))^2 + iterFitSigma(m, n)^2)];
+            elseif (TwoFitSigma == 1)
+                dY = [dY; sqrt((uncertainties(m, n)./data(m, n)/log(10))^2 + twoFitSigma(m, n)^2)];
             else
                 dY = [dY; uncertainties(m, n)./data(m, n)/log(10)];
             end
@@ -271,7 +271,7 @@ end
 
 % Perform fit
 if (Usenlinfit == 1)
-    [fitCoeffs, R, J, Cov, MSE, ErrorModelInfo] = nlinfit(X, Y, model_func, lsqCoeffs, 'Weights', dY^(-1));
+    [fitCoeffs, R, J, Cov, MSE, ErrorModelInfo] = nlinfit(X, Y, model_func, lsqCoeffs, 'Weights', dY.^(-1));
     for k = 1:length(d)
         d(k) = sqrt(Cov(k,k));
     end
@@ -327,7 +327,6 @@ end
 grid on;
 s1000.LineWidth = 3;
 sf1000.EdgeAlpha = 0.5;
-
 ax = gca; 
 ax.LineWidth = 3;
 ax.FontSize = 16;
@@ -424,10 +423,6 @@ else
     legend('Calculated Data', 'Fit', 'Phase Constraint', 'Frequency Constraint');
 end
 hold off;
-
-for k = 1:length(Tobsvec)
-    fprintf('Range of template spacings for i = %d: %e\n', Nsegvec(k), range(data(k:end, Nsegvec(k))))
-end
 
 %% Functions
 

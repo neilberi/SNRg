@@ -95,9 +95,7 @@ for j = 1:length(fdotvec_sig)
         dataIndices = logical((X(:, 1) == log10(abs(fdotvec_sig(j)))).*(X(:, 2) == log10(Tobsvecs{j}(k))));
         errorfitparams = nlinfit(X(dataIndices, 3), Y(dataIndices), quad_model, [-0.8311, -0.2004, -0.4803]);
         for i = 1:Nsegvecs{j}
-            dataIndex = logical(dataIndices.*(X(:, 3) == log10(i)));
-            twoFitSigma = abs(Y(dataIndex) - quad_model(errorfitparams, i));
-            dY(dataIndex) = sqrt(dY(dataIndex)^2 + twoFitSigma^2);
+            dataIndex = logical(dataIndices.*)
         end
     end
 end
@@ -107,7 +105,8 @@ model_func = @(a, X) (a(1) + a(2).*X(:, 1)).*X(:, 2) + ...
                      (a(3) + a(4).*X(:, 1)).*X(:, 3) + ...
                      (a(5) + a(6).*X(:, 1));
 
-[fitParams, dParams] = fitChiSquare(X, Y, model_func, [fitParamfitParams{1}, fitParamfitParams{2}, fitParamfitParams{3}], zeros(height(X), 3), dY);
+%[fitParams, dParams] = fitChiSquare(X, Y, model_func, [fitParamfitParams{1}, fitParamfitParams{2}, fitParamfitParams{3}], zeros(height(X), 3), dY);
+[fitCoeffs, R, J, Cov, MSE, ErrorModelInfo] = nlinfit(X, Y, model_func, [fitParamfitParams{1}, fitParamfitParams{2}, fitParamfitParams{3}], 'Weights', 1./dY);
 
 % Plot data points and fits on surfaces of constant fdot
 model_func2 = @(a, fdot, Tobs, i) (a(1) + a(2).*fdot).*Tobs + ...
