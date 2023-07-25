@@ -8,7 +8,7 @@ close all;
 ParsevalSNR = 1; 
 RealPartDS = 0;
 Animation = 0;
-NequalNseg = 0;
+NequalNseg = ;
 PlotSNRvsdfdot = 1;
 PlotMaxSNRgvsTobs = 0;
 PlotLastTimeSegment = 0;

@@ -7,6 +7,7 @@ close all;
 
 ParsevalSNR = 1;
 
+
 %% Read in template spacing fit coeffs
 fitDegree = 1;
 
@@ -89,14 +90,14 @@ for j = 1:length(fdotvec_sig)
 end
 
 % Do an additional fit to add to uncertainties
-quad_model = @(a, x) a(1)*x.^2 + a(2)*x + a(3);
+lin_model = @(a, x) a(1)*x + a(2);
 for j = 1:length(fdotvec_sig)
     for k = 1:length(Tobsvecs{j})
         dataIndices = logical((X(:, 1) == log10(abs(fdotvec_sig(j)))).*(X(:, 2) == log10(Tobsvecs{j}(k))));
-        errorfitparams = nlinfit(X(dataIndices, 3), Y(dataIndices), quad_model, [-0.8311, -0.2004, -0.4803]);
+        errorfitparams = nlinfit(X(dataIndices, 3), Y(dataIndices), lin_model, [-1, -8]);
         for i = 1:Nsegvecs{j}
             dataIndex = logical(dataIndices.*(X(:, 3) == log10(i)));
-            twoFitSigma = abs(Y(dataIndex) - quad_model(errorfitparams, i));
+            twoFitSigma = abs(Y(dataIndex) - lin_model(errorfitparams, i));
             dY(dataIndex) = sqrt(dY(dataIndex)^2 + twoFitSigma^2);
         end
     end
@@ -110,9 +111,9 @@ model_func = @(a, X) (a(1) + a(2).*X(:, 1)).*X(:, 2) + ...
 [fitParams, dParams] = fitChiSquare(X, Y, model_func, [fitParamfitParams{1}, fitParamfitParams{2}, fitParamfitParams{3}], zeros(height(X), 3), dY);
 
 % Plot data points and fits on surfaces of constant fdot
-model_func2 = @(a, fdot, Tobs, i) (a(1) + a(2).*fdot).*Tobs + ...
-                                  (a(3) + a(4).*fdot).*i + ...
-                                  (a(5) + a(6).*fdot);
+model_func2 = @(a, fdot_log, Tobs_log, i_log) (a(1) + a(2).*fdot_log).*Tobs_log + ...
+                                              (a(3) + a(4).*fdot_log).*i_log + ...
+                                              (a(5) + a(6).*fdot_log);
 
 modelmats = cell(length(fdotvec_sig));
 for k = 1:length(fdotvec_sig)
