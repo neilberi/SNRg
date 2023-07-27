@@ -155,11 +155,5 @@ for j = 1:length(fdotvec_sig)
     [imat, Tobsmat] = meshgrid(1:Nsegvecs{j}(end), Tobsvecs{j});
     figure;
     sfk = surf(Tobsmat, imat, chisqrContributions{j});
-    title(sprintf('Chi^2 Contributions from Each Data Point fdot = %2.e Hz/s', fdotvec_sig(j)));
-    xlabel('Base 10 log of Tobs (log(hr))');
-    ylabel('Base 10 log of i')
-    ax = gca;
-    ax.FontSize = 16;
-    ax.LineWidth = 3;
-    grid on;
+    title(sprintf('Chi^2 Contributions from Each Data Point fdot = %.2e'))
 end

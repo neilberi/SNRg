@@ -20,8 +20,8 @@ OutputFile3 = 0;
 %% Generate Signal Spectrogram
 
 % SNR1 and {SNRg_i | M<=i<=N} will be calculated
-M = 800;
-N = 800;
+M = 47;
+N = 47;
 Ntrial = 10;
 if (OutputFile1 == 0)
     Ntrial = 1;
@@ -43,10 +43,10 @@ noiseamp = hnoise;
 f_sig = 100.;
 
 % Signal frequency derivative (Hz/s)
-fdot_sig = -3.e-5;
+fdot_sig = -5.e-7;
 
 % Length of observation (hr)
-Tobs_hr = 29.;
+Tobs_hr = 25.;
 Tobs = Tobs_hr * 3600.;
 if (OutputFile1 == 1)
     if (ParsevalSNR == 1)
