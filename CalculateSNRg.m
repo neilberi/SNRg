@@ -8,20 +8,20 @@ close all;
 ParsevalSNR = 1; 
 RealPartDS = 0;
 Animation = 0;
-NequalNseg = 0;
-PlotSNRvsdfdot = 1;
+NequalNseg = 1;
+PlotSNRvsdfdot = 0;
 PlotMaxSNRgvsTobs = 0;
 PlotLastTimeSegment = 0;
 Plotdfdotvsi = 0;
-OutputFile1 = 0;
+OutputFile1 = 1;
 OutputFile2 = 0;
 OutputFile3 = 0;
 
 %% Generate Signal Spectrogram
 
 % SNR1 and {SNRg_i | M<=i<=N} will be calculated
-M = 47;
-N = 47;
+M = 1;
+N = 100;
 Ntrial = 10;
 if (OutputFile1 == 0)
     Ntrial = 1;
@@ -43,10 +43,10 @@ noiseamp = hnoise;
 f_sig = 100.;
 
 % Signal frequency derivative (Hz/s)
-fdot_sig = -5.e-7;
+fdot_sig = -5.e-5;
 
 % Length of observation (hr)
-Tobs_hr = 25.;
+Tobs_hr = 4.;
 Tobs = Tobs_hr * 3600.;
 if (OutputFile1 == 1)
     if (ParsevalSNR == 1)
@@ -115,7 +115,7 @@ Nbin_drift_total = abs(fdot_sig) * Tobs * Tcoh;
 fprintf('Number of bins signal drifts per coherence time = %8.2f\n',Nbin_drift);
 fprintf('Total number of bins signal drifts = %8.2f\n',Nbin_drift_total);
 
-for dummyIterator = 1:Ntrial
+for trial = 1:Ntrial
     % Generate noise
     noise = noiseamp*random('norm',0.,1.,1.,Nsample);
 
