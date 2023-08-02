@@ -6,14 +6,23 @@ clc;
 close all;
 
 ParsevalSNR = 1;
+TS = 'f'; % Choose f or fdot
 
 %% Read in template spacing fit coeffs
 fitDegree = 1;
 
-if (ParsevalSNR == 1)
-    filename = sprintf('TemplateSpacingFitCoeffsfitDegree_%fP.csv', fitDegree);
-else 
-    filename = sprintf('TemplateSpacingFitCoeffsfitDegree_%f.csv', fitDegree);
+if (strcmp(TS, 'f'))
+    if (ParsevalSNR == 1)
+        filename = sprintf('fTemplateSpacingFitCoeffsfitDegree_%fP.csv', fitDegree);
+    else 
+        filename = sprintf('fTemplateSpacingFitCoeffsfitDegree_%f.csv', fitDegree);
+    end
+else
+    if (ParsevalSNR == 1)
+        filename = sprintf('fdotTemplateSpacingFitCoeffsfitDegree_%fP.csv', fitDegree);
+    else 
+        filename = sprintf('fdotTemplateSpacingFitCoeffsfitDegree_%f.csv', fitDegree);
+    end
 end
 
 FitCoeffs1 = readmatrix(filename);

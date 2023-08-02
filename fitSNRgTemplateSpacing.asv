@@ -184,11 +184,7 @@ if (Fits2D == 1)
         pk = plot(log10(ivec), fitCoeffs(1).*log10(ivec) + fitCoeffs(2), '--r');
         title(['Template Spacing vs i for Tobs = ', num2str(Tobsvec(k))]);
         xlabel('log(i)');
-        if (strcmp(TS, 'f'))
-            ylabel('log(df) (log(Hz))');
-        else
-            ylabel('log(dfdot) (log(Hz/s))');
-        end
+        ylabel('log(dfdot) (log(Hz/s))');
         grid on;
         pk.LineWidth = 1;
         legend('Calculated Data', ['Fit (slope = ', num2str(fitCoeffs(1)), '+/-', num2str(dslope), ')']);
@@ -329,11 +325,7 @@ sf1000 = surf(Tobsmat, imat, modelmat);
 title('Template Spacing over Tobs and i');
 xlabel('log(Tobs) (log(hr))');
 ylabel('log(i)');
-if (strcmp(TS, 'f'))
-    zlabel('log(df) (log(Hz))');
-else
-    zlabel('log(dfdot) (log(Hz/s))');
-end
+zlabel('log(dfdot) (log(Hz/s))');
 if (fitDegree == pi)
     Tpoints = linspace(log10(min(Tobsvec)), log10(max(Tobsvec)), 100);
     p1000 = plot3(Tpoints, fitCoeffs(4).*ones(1, 100), model_func2(fitCoeffs, Tpoints, fitCoeffs(4).*ones(1, 100)), '-y');
@@ -355,23 +347,13 @@ ax.LineWidth = 3;
 ax.FontSize = 16;
 
 if (OutputFile == 1)
-    if (strcmp(TS, 'f'))
-        if (ParsevalSNR == 1)
-            filenameOut = sprintf('fTemplateSpacingFitCoeffsfitDegree_%fP.csv', fitDegree);
-        else 
-            filenameOut = sprintf('fTemplateSpacingFitCoeffsfitDegree_%f.csv', fitDegree);
-        end
-        fout = fopen(filenameOut, 'a');
-        fprintf(fout, '%e, ', fdot_sig);
-    else
-        if (ParsevalSNR == 1)
-            filenameOut = sprintf('fdotTemplateSpacingFitCoeffsfitDegree_%fP.csv', fitDegree);
-        else 
-            filenameOut = sprintf('fdotTemplateSpacingFitCoeffsfitDegree_%f.csv', fitDegree);
-        end
-        fout = fopen(filenameOut, 'a');
-        fprintf(fout, '%e, ', fdot_sig);
+    if (ParsevalSNR == 1)
+        filenameOut = sprintf('TemplateSpacingFitCoeffsfitDegree_%fP.csv', fitDegree);
+    else 
+        filenameOut = sprintf('TemplateSpacingFitCoeffsfitDegree_%f.csv', fitDegree);
     end
+    fout = fopen(filenameOut, 'a');
+    fprintf(fout, '%e, ', fdot_sig);
 end
 
 % Print model function with optimized parameters

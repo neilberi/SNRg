@@ -16,7 +16,7 @@ Ntrials = 10;
 X = [];
 Y = [];
 dY = [];
-Tobsvecs = cell(length(fdotvec_sig));
+Tobsvecs = cell(1, length(fdotvec_sig));
 Nsegvecs = Tobsvecs;
 for j = 1:length(fdotvec_sig)
     fdot_sig = fdotvec_sig(j);
@@ -25,9 +25,9 @@ for j = 1:length(fdotvec_sig)
     Tcoh = floor(Tcoh);
     Tcoh_hr = Tcoh/3600.;
     if (ParsevalSNR == 0)
-        filenameIn = sprintf('SNRgTemplateSpacingfdot_%0.e.csv', fdot_sig);
+        filenameIn = sprintf('SNRgfdotTemplateSpacingfdot_%0.e.csv', fdot_sig);
     else
-        filenameIn = sprintf('SNRgTemplateSpacingfdot_%0.eP.csv', fdot_sig);
+        filenameIn = sprintf('SNRgfdotTemplateSpacingfdot_%0.eP.csv', fdot_sig);
     end
 
     Data = readmatrix(filenameIn);
@@ -73,7 +73,8 @@ model_func = @(a, X) a(1).*X(:, 2) + ...
                      a(2).*X(:, 3) + ...
                      a(3) + a(4).*X(:, 1);
 
-[fitParams_TS, dParams_TS] = fitChiSquare(X, Y, model_func, initialFitParams, zeros(height(X), 3), dY);
+options = optimset("Display", "off");
+[fitParams_TS, dParams_TS, gof_TS] = fitChiSquare(X, Y, model_func, initialFitParams, zeros(height(X), 3), dY, options);
 
 
 % Plot data points and fits on surfaces of constant fdot
@@ -109,6 +110,40 @@ for k = 1:length(fdotvec_sig)
     hold off;
 end
 
+% Plot Entire Dataset
+[Tobsmat, imat] = meshgrid(linspace(log10(1), log10(max(Tobsvecs{1})), 100), linspace(log10(1), log10(max(Nsegvecs{k})), 100));
+s2000 = cell(1, length(fdotvec_sig));
+sf2000 = s2000;
+legends = s2000;
+rainbows = {0.5*[1, 0, 0], 0.5*[1, 1, 0], 0.5*[0, 1, 0], 0.5*[0, 0, 1], 0.5*[1, 0, 1]};
+rainbowsf = {'red', 'yellow', 'green', 'blue', 'magenta'};
+
+figure;
+hold on;
+for k = 1:length(fdotvec_sig)
+    modelmats{k} = model_func2(fitParams_TS, log10(abs(fdotvec_sig(k))), Tobsmat, imat);
+    s2000{k} = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*');
+    sf2000{k} = surf(Tobsmat, imat, modelmats{k});
+    s2000{k}.MarkerEdgeColor = rainbows{k};
+    sf2000{k}.EdgeAlpha = 0.125;
+    sf2000{k}.FaceAlpha = 0.25;
+    sf2000{k}.FaceColor = rainbowsf{k};
+    s2000{k}.LineWidth = 3;
+    sf2000{k}.EdgeAlpha = 0.5;
+    sf2000{k}.EdgeColor = rainbowsf{k};
+    legends{k} = sprintf('fdot = %0.e Hz/s', fdotvec_sig(k));
+end
+legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends);
+title('Template Spacings Data (points) vs Model (surfaces)');
+xlabel('log(Tobs) (log(hr))');
+ylabel('log(i)');
+zlabel('log(dfdot) (log(Hz/s))');
+grid on;
+hold off;
+ax = gca;
+ax.LineWidth = 3;
+ax.FontSize = 16;
+
 % Calculate chi^2 contributions
 if (PlotChiSqrContributions == 1)
     chisqrContributions = cell(1, length(fdotvec_sig));
@@ -138,6 +173,21 @@ if (PlotChiSqrContributions == 1)
     end
 end
 
+if (CrossTerms == 1)
+    fprintf('log(TS) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_TS(1), dParams_TS(1).d);
+    fprintf('\t(%f +/- %f)log(|fdot|)log(Tobs) +\n', fitParams_TS(2), dParams_TS(2).d);
+    fprintf('\t(%f +/- %f)log(i) +\n', fitParams_TS(3), dParams_TS(3).d);
+    fprintf('\t(%f +/- %f)log(|fdot|)log(i) +\n', fitParams_TS(4), dParams_TS(4).d);
+    fprintf('\t(%f +/- %f) +\n', fitParams_TS(5), dParams_TS(5).d);
+    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_TS(6), dParams_TS(6).d);
+else 
+    fprintf('log(TS) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_TS(1), dParams_TS(1).d);
+    fprintf('\t(%f +/- %f)log(i) +\n', fitParams_TS(2), dParams_TS(2).d);
+    fprintf('\t(%f +/- %f) +\n', fitParams_TS(3), dParams_TS(3).d);
+    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_TS(4), dParams_TS(4).d);
+end
+fprintf('Chi^2 = %f\n', gof_TS.chi2);
+fprintf('Chi^2/dof = %f\n\n', gof_TS.chi2/gof_TS.dof);
 %% Fit SNRg Values
 
 % Read in and configure data
@@ -195,7 +245,8 @@ model_func = @(a, X) a(1).*X(:, 2) + ...
                      a(2).*X(:, 3) + ...
                      a(3) + a(4).*X(:, 1);
 
-[fitParams_SNR, dParams_SNR] = fitChiSquare(X, Y, model_func, initialFitParams, zeros(height(X), 3), dY);
+options = optimset("Display", "off");
+[fitParams_SNR, dParams_SNR, gof_SNR] = fitChiSquare(X, Y, model_func, initialFitParams, zeros(height(X), 3), dY, options);
 
 
 % Plot data points and fits on surfaces of constant fdot
@@ -221,7 +272,7 @@ for k = 1:length(fdotvec_sig)
     title(['SNRg_i over Tobs and i for fdot = -5.e', num2str(log10(abs(fdotvec_sig(k))/5)), ' Hz/s']);
     xlabel('log(Tobs) (log(hr))');
     ylabel('log(i)');
-    zlabel('log(dfdot) (log(Hz/s))');
+    zlabel('log(SNR)');
     grid on;
     s1000.LineWidth = 3;
     sf1000.EdgeAlpha = 0.5;
@@ -230,6 +281,40 @@ for k = 1:length(fdotvec_sig)
     ax.FontSize = 16;
     hold off;
 end
+
+% Plot Entire Dataset
+[Tobsmat, imat] = meshgrid(linspace(log10(1), log10(max(Tobsvecs{1})), 100), linspace(log10(1), log10(max(Nsegvecs{k})), 100));
+s2000 = cell(1, length(fdotvec_sig));
+sf2000 = s2000;
+legends = s2000;
+rainbows = {0.5*[1, 0, 0], 0.5*[1, 1, 0], 0.5*[0, 1, 0], 0.5*[0, 0, 1], 0.5*[1, 0, 1]};
+rainbowsf = {'red', 'yellow', 'green', 'blue', 'magenta'};
+
+figure;
+hold on;
+for k = 1:length(fdotvec_sig)
+    modelmats{k} = model_func2(fitParams_SNR, log10(abs(fdotvec_sig(k))), Tobsmat, imat);
+    s2000{k} = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*');
+    sf2000{k} = surf(Tobsmat, imat, modelmats{k});
+    s2000{k}.MarkerEdgeColor = rainbows{k};
+    sf2000{k}.EdgeAlpha = 0.125;
+    sf2000{k}.FaceAlpha = 0.25;
+    sf2000{k}.FaceColor = rainbowsf{k};
+    s2000{k}.LineWidth = 3;
+    sf2000{k}.EdgeAlpha = 0.5;
+    sf2000{k}.EdgeColor = rainbowsf{k};
+    legends{k} = sprintf('fdot = %0.e Hz/s', fdotvec_sig(k));
+end
+legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends);
+title('SNRg_i Data (points) vs Model (surfaces)');
+xlabel('log(Tobs) (log(hr))');
+ylabel('log(i)');
+zlabel('log(dfdot) (log(Hz/s))');
+grid on;
+hold off;
+ax = gca;
+ax.LineWidth = 3;
+ax.FontSize = 16;
 
 % Calculate chi^2 contributions
 if (PlotChiSqrContributions == 1)
@@ -260,3 +345,18 @@ if (PlotChiSqrContributions == 1)
     end
 end
 
+if (CrossTerms == 1)
+    fprintf('log(SNRg_i) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_SNR(1), dParams_SNR(1).d);
+    fprintf('\t(%f +/- %f)log(|fdot|)log(Tobs) +\n', fitParams_SNR(2), dParams_SNR(2).d);
+    fprintf('\t(%f +/- %f)log(i) +\n', fitParams_SNR(3), dParams_SNR(3).d);
+    fprintf('\t(%f +/- %f)log(|fdot|)log(i) +\n', fitParams_SNR(4), dParams_SNR(4).d);
+    fprintf('\t(%f +/- %f) +\n', fitParams_SNR(5), dParams_SNR(5).d);
+    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_SNR(6), dParams_SNR(6).d);
+else 
+    fprintf('log(SNRg_i) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_SNR(1), dParams_SNR(1).d);
+    fprintf('\t(%f +/- %f)log(i) +\n', fitParams_SNR(2), dParams_SNR(2).d);
+    fprintf('\t(%f +/- %f) +\n', fitParams_SNR(3), dParams_SNR(3).d);
+    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_SNR(4), dParams_SNR(4).d);
+end
+fprintf('Chi^2 = %f\n', gof_SNR.chi2);
+fprintf('Chi^2/dof = %f\n\n', gof_SNR.chi2/gof_SNR.dof);

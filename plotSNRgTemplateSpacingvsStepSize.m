@@ -4,31 +4,51 @@ clear;
 clc;
 close all;
 
+ParsevalSNR = 1;
+TS = 'f'; % Choose f or fdot
+
 %% Read Data
 % Choose frequency derivative (Hz/s), observation time (hr)
 fdot_sig = -5.e-9;
-Tobs_hr = 39.;
+Tobs_hr = 11.;
 
 % Read in data and assign to variables
-filename = sprintf('SNRgTemplateSpacingvsStepSizefdot_%0.eTobs_%0.fP.csv', fdot_sig, Tobs_hr);
+if (strcmp(TS, 'f'))
+    if (ParsevalSNR == 1)
+        filename = sprintf('SNRgfTemplateSpacingvsStepSizefdot_%0.eTobs_%0.fP.csv', fdot_sig, Tobs_hr);
+    else
+        filename = sprintf('SNRgfTemplateSpacingvsStepSizefdot_%0.eTobs_%0.f.csv', fdot_sig, Tobs_hr);
+    end
+else
+    if (ParsevalSNR == 1)
+        filename = sprintf('SNRgfdotTemplateSpacingvsStepSizefdot_%0.eTobs_%0.fP.csv', fdot_sig, Tobs_hr);
+    else
+        filename = sprintf('SNRgfdotTemplateSpacingvsStepSizefdot_%0.eTobs_%0.f.csv', fdot_sig, Tobs_hr);
+    end
+end
 data = readmatrix(filename);
 
-fdot_sigStepSizes = data(:, 1);
+step_sizes = data(:, 1);
 templateSpacings = data(:, 2:end);
 ivec = 1:length(templateSpacings(1, :));
 
 % Choose grouping number for plot
-i = ivec(end); %3.125e-11 to end
+i = ivec(1); %2.5e-6 to end
 
 %% Plot SNRg Template Spacing vs Step Size 
 
 % Plot 
 figure(1)
-sk = scatter(fdot_sigStepSizes, templateSpacings(:, i), '*k');
+sk = scatter(step_sizes, templateSpacings(:, i), '*k');
 sk.LineWidth = 3;
-title(['SNRg_{', num2str(i), '} Template Spacing vs fdot Step Size']);
-xlabel('fdot Step Size (Hz/s)');
-ylabel('Template Spacing (Hz/s)');
+title(['SNRg_{', num2str(i), '} Template Spacing vs Step Size']);
+if (strcmp(TS, 'f'))
+    xlabel('f Step Size (Hz)');
+    ylabel('f Template Spacing (Hz)')
+else
+    xlabel('fdot Step Size (Hz/s)');
+    ylabel('fdot Template Spacing (Hz/s)');
+end
 grid on;
 ax = gca;
 ax.LineWidth = 3;

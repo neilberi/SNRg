@@ -13,8 +13,8 @@ PlotSNRvsParam = 0;
 PlotLastTimeSegment = 0;
 PlotTSvsi_log = 0;
 OutputFile1 = 0;
-OutputFile2 = 1;
-OutputFile3 = 0;
+OutputFile2 = 0;
+OutputFile3 = 1;
 
 TS = 'f'; % Choose 'f' or 'fdot'
 
@@ -438,7 +438,7 @@ end
 
 % Create vector of fdot values (for search)
 searchScale = 20;
-f_sigStepSize = 2.5e-6;
+f_sigStepSize = 0.75*0.05/Tcoh;
 fdot_sigStepSize = 1.e-3*abs(fdot_sig);
 if (strcmp(TS, 'f'))
     fvec_sig = (f_sig - searchScale*f_sigStepSize):f_sigStepSize:(f_sig + searchScale*f_sigStepSize);
