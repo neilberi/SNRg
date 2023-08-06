@@ -9,8 +9,8 @@ TS = 'f'; % Choose f or fdot
 
 %% Read Data
 % Choose frequency derivative (Hz/s), observation time (hr)
-fdot_sig = -5.e-9;
-Tobs_hr = 11.;
+fdot_sig = -5.e-8;
+Tobs_hr = 32.;
 
 % Read in data and assign to variables
 if (strcmp(TS, 'f'))
@@ -33,7 +33,7 @@ templateSpacings = data(:, 2:end);
 ivec = 1:length(templateSpacings(1, :));
 
 % Choose grouping number for plot
-i = ivec(1); %2.5e-6 to end
+i = ivec(end); %7.90639e-6 to 5, 1.9766e-6 to end
 
 %% Plot SNRg Template Spacing vs Step Size 
 

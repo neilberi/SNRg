@@ -22,7 +22,7 @@ fitDegree = 1;
 %% Read in and configure data
 
 % Select fdot value (Hz/s)
-fdot_sig = -5.e-9; % One of the following: -5.e-9, -5.e-8, -5.e-7, -5.e-6, -5.e-5
+fdot_sig = -5.e-8; % One of the following: -5.e-9, -5.e-8, -5.e-7, -5.e-6, -5.e-5
 
 Tcoh_hr = 1./3600.*sqrt(0.5/abs(fdot_sig));
 Tcoh = Tcoh_hr * 3600.;
@@ -206,7 +206,7 @@ X = [];
 Y = [];
 dY = [];
 for m = 1:length(data(:, 1))
-    for n = 2:length(data(1, :))
+    for n = 1:length(data(1, :))
         if (n <= round(Nsegvec(m)))
             X = [X; log10(Tobsvec(m)), log10(n)];
             Y = [Y; log10(data(m, n))];

@@ -181,7 +181,7 @@ if (CrossTerms == 1)
     fprintf('\t(%f +/- %f) +\n', fitParams_fTS(5), dParams_fTS(5).d);
     fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_fTS(6), dParams_fTS(6).d);
 else 
-    fprintf('log(TS_f) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_fTS(1), dParams_fTS(1).d);
+    fprintf('log(TS) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_fTS(1), dParams_fTS(1).d);
     fprintf('\t(%f +/- %f)log(i) +\n', fitParams_fTS(2), dParams_fTS(2).d);
     fprintf('\t(%f +/- %f) +\n', fitParams_fTS(3), dParams_fTS(3).d);
     fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_fTS(4), dParams_fTS(4).d);
@@ -347,14 +347,14 @@ if (PlotChiSqrContributions == 1)
 end
 
 if (CrossTerms == 1)
-    fprintf('log(TS_dfot) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_fdotTS(1), dParams_fdotTS(1).d);
+    fprintf('log(TS) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_fdotTS(1), dParams_fdotTS(1).d);
     fprintf('\t(%f +/- %f)log(|fdot|)log(Tobs) +\n', fitParams_fdotTS(2), dParams_fdotTS(2).d);
     fprintf('\t(%f +/- %f)log(i) +\n', fitParams_fdotTS(3), dParams_fdotTS(3).d);
     fprintf('\t(%f +/- %f)log(|fdot|)log(i) +\n', fitParams_fdotTS(4), dParams_fdotTS(4).d);
     fprintf('\t(%f +/- %f) +\n', fitParams_fdotTS(5), dParams_fdotTS(5).d);
     fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_fdotTS(6), dParams_fdotTS(6).d);
 else 
-    fprintf('log(TS_fdot) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_fdotTS(1), dParams_fdotTS(1).d);
+    fprintf('log(TS) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_fdotTS(1), dParams_fdotTS(1).d);
     fprintf('\t(%f +/- %f)log(i) +\n', fitParams_fdotTS(2), dParams_fdotTS(2).d);
     fprintf('\t(%f +/- %f) +\n', fitParams_fdotTS(3), dParams_fdotTS(3).d);
     fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_fdotTS(4), dParams_fdotTS(4).d);

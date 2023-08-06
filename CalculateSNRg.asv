@@ -13,15 +13,20 @@ PlotSNRvsParam = 0;
 PlotLastTimeSegment = 0;
 PlotTSvsi_log = 0;
 OutputFile1 = 0;
-OutputFile2 = 0;
-OutputFile3 = 1;
+OutputFile2 = 1;
+OutputFile3 = 0;
+
+if (OutputFile3 == 1)
+    global StepSize_in; %#ok<NUSED,*TLEV>
+    global StepSize_invec; %#ok<NUSED,*TLEV,*GVMIS>
+end
 
 TS = 'f'; % Choose 'f' or 'fdot'
 
 %% Generate Signal Spectrogram
 
 % SNR1 and {SNRg_i | M<=i<=N} will be calculated
-M = 1;
+M = 6;
 N = 100;
 Ntrial = 10;
 if (OutputFile1 == 0)
@@ -44,10 +49,10 @@ noiseamp = hnoise;
 f_sig = 100.;
 
 % Signal frequency derivative (Hz/s)
-fdot_sig = -5.e-9;
+fdot_sig = -5.e-8;
 
 % Length of observation (hr)
-Tobs_hr = 12.;
+Tobs_hr = 28.;
 Tobs = Tobs_hr * 3600.;
 if (OutputFile1 == 1)
     if (ParsevalSNR == 1)
@@ -68,13 +73,13 @@ Tcoh_hr = Tcoh/3600.;
 % DO NOT TOUCH/CARE
 searchScale = 0;
 
-f_sigStepSize = (0.1)/Tcoh*(Tcoh < Tobs) + 0.3/sqrt(0.5/(1.e-6))*(Tcoh >= Tobs);
-fvec_sig = (f_sig-searchScale*f_sigStepSize) : f_sigStepSize : (f_sig+searchScale*f_sigStepSize);
+fStepSize = (0.1)/Tcoh*(Tcoh < Tobs) + 0.3/sqrt(0.5/(1.e-6))*(Tcoh >= Tobs);
+fvec = (f_sig-searchScale*fStepSize) : fStepSize : (f_sig+searchScale*fStepSize);
 
-fdot_sigStepSize = (7.8e-6)*abs(fdot_sig)*(fdot_sig ~= 0) + 1.e-7*(fdot_sig == 0);
-fdotvec_sig = (fdot_sig-searchScale*fdot_sigStepSize) : fdot_sigStepSize : (fdot_sig+searchScale*fdot_sigStepSize);
+fdotStepSize = (7.8e-6)*abs(fdot_sig)*(fdot_sig ~= 0) + 1.e-7*(fdot_sig == 0);
+fdotvec = (fdot_sig-searchScale*fdotStepSize) : fdotStepSize : (fdot_sig+searchScale*fdotStepSize);
 
-[F, Fdot] = meshgrid(fvec_sig, fdotvec_sig);
+[F, Fdot] = meshgrid(fvec, fdotvec);
 
 % Adjust observation time to be exactly an integer number of coherence times to avoid binning headaches
 Nseg = floor(Tobs/Tcoh);
@@ -103,8 +108,8 @@ Nsample = length(t);
 bandscale = 115; % Increase if fIndex is too high/low
 f_siglo = min(f_sig,f_sig+fdot_sig*Tobs);
 f_sighi = max(f_sig,f_sig+fdot_sig*Tobs);
-freqlo_approx = min(fvec_sig)+min(fdotvec_sig)*Tobs - (noiseOffset + nNoiseSample + nBinSide)/Tcoh - bandscale/Tcoh;
-freqhi_approx = max(fvec_sig)+max(fdotvec_sig)*Tobs*(max(fdotvec_sig) > 0) + (noiseOffset + nNoiseSample + nBinSide)/Tcoh + bandscale/Tcoh;
+freqlo_approx = min(fvec)+min(fdotvec)*Tobs - (noiseOffset + nNoiseSample + nBinSide)/Tcoh - bandscale/Tcoh;
+freqhi_approx = max(fvec)+max(fdotvec)*Tobs*(max(fdotvec) > 0) + (noiseOffset + nNoiseSample + nBinSide)/Tcoh + bandscale/Tcoh;
 freqhi = ceil(freqhi_approx * Tcoh)/Tcoh;
 freqlo = floor(freqlo_approx * Tcoh)/Tcoh;
 bandwidth = freqhi - freqlo;
@@ -434,36 +439,36 @@ if (NequalNseg == 1 && M == 1 && Nseg >= 4)
     ax.FontSize = 15;
 
 end
-%% Calculate SNR for Various fdot
+%% Calculate SNR for Various f/fdot
 
-% Create vector of fdot values (for search)
+% Create vector of f/fdot values (for search)
 searchScale = 20;
-f_sigStepSize = 0.75*0.05/Tcoh;
-fdot_sigStepSize = 1.e-3*abs(fdot_sig);
+fStepSize = StepSiz;
+fdotStepSize = 1.e-3*abs(fdot_sig);
 if (strcmp(TS, 'f'))
-    fvec_sig = (f_sig - searchScale*f_sigStepSize):f_sigStepSize:(f_sig + searchScale*f_sigStepSize);
-    fdotvec_sig = fdot_sig;
-    SNR1Array = zeros(1, length(fvec_sig));
-    SNRg_iArray = zeros(N-M+1, length(fvec_sig));
+    fvec = (f_sig - searchScale*fStepSize):fStepSize:(f_sig + searchScale*fStepSize);
+    fdotvec = fdot_sig;
+    SNR1Array = zeros(1, length(fvec));
+    SNRg_iArray = zeros(N-M+1, length(fvec));
 else
-    fvec_sig = f_sig;
-    fdotvec_sig = (fdot_sig - searchScale*fdot_sigStepSize):fdot_sigStepSize:(fdot_sig + searchScale*fdot_sigStepSize);
-    SNR1Array = zeros(1, length(fdotvec_sig));
-    SNRg_iArray = zeros(N-M+1, length(fdotvec_sig));
+    fvec = f_sig;
+    fdotvec = (fdot_sig - searchScale*fdotStepSize):fdotStepSize:(fdot_sig + searchScale*fdotStepSize);
+    SNR1Array = zeros(1, length(fdotvec));
+    SNRg_iArray = zeros(N-M+1, length(fdotvec));
 end
 
-for r = 1:length(fvec_sig)
-    for j = 1:length(fdotvec_sig)
+for r = 1:length(fvec)
+    for j = 1:length(fdotvec)
         
         if (strcmp(TS, 'f'))
-            fprintf('Calulating SNRg_is for df = %e Hz\n', fvec_sig(r)-f_sig);
+            fprintf('Calulating SNRg_is for df = %e Hz\n', fvec(r)-f_sig);
         else
-            fprintf('Calulating SNRg_is for dfdot = %e Hz/s\n', fdotvec_sig(j)-fdot_sig);
+            fprintf('Calulating SNRg_is for dfdot = %e Hz/s\n', fdotvec(j)-fdot_sig);
         end
         
         % Calculate expected phase/frequency trajectories and signal
-        freqTraj = fvec_sig(r) + fdotvec_sig(j).*t; 
-        phaseTraj = 2*pi.*(fvec_sig(r).*t + 0.5*fdotvec_sig(j).*t.^2);
+        freqTraj = fvec(r) + fdotvec(j).*t; 
+        phaseTraj = 2*pi.*(fvec(r).*t + 0.5*fdotvec(j).*t.^2);
         searchSignal = hamp.*sin(phaseTraj);
     
         % Create template spectrogram
@@ -582,7 +587,7 @@ for r = 1:length(fvec_sig)
             x1900j = xline(fIndex(end), '--k');
             x1900j.LineWidth = 1;
             s1900j.LineWidth = 3;
-            title(['Last Time Segment Fourier Coefficient Magnitude dfdot_{sig} = ', num2str(fdotvec_sig(j) - fdot_sig), ' Hz/s']);
+            title(['Last Time Segment Fourier Coefficient Magnitude dfdot_{sig} = ', num2str(fdotvec(j) - fdot_sig), ' Hz/s']);
             xlabel('frequency bin');
             ylabel('magnitude');
             legend('template', 'data', 'fIndex');
@@ -599,7 +604,7 @@ for r = 1:length(fvec_sig)
             x2900j = xline(fIndex(end), '--k');
             x2900j.LineWidth = 1;
             s2900j.LineWidth = 3;
-            title(['Last Time Segment Fourier Coefficient Phase dfdot_{sig} = ', num2str(fdotvec_sig(j) - fdot_sig), ' Hz/s']);
+            title(['Last Time Segment Fourier Coefficient Phase dfdot_{sig} = ', num2str(fdotvec(j) - fdot_sig), ' Hz/s']);
             xlabel('frequency bin');
             ylabel('phase');
             legend('template', 'data', 'fIndex');
@@ -640,17 +645,17 @@ for i = M:N
         titleStrings{i-M+1} = sprintf('SNRg_{%d} vs dfdot', i);
     end
 end
-df_sig = fvec_sig-f_sig;
-dfdot_sig = fdotvec_sig-fdot_sig;
+df = fvec-f_sig;
+dfdot = fdotvec-fdot_sig;
 
 % Plot SNRg_i vs i
-for k = 1:(length(dfdot_sig)*length(df_sig))
+for k = 1:(length(dfdot)*length(df))
     figure(3+k)
     sk1 = scatter(M:N, SNRg_iArray(:, k), 'ok');
     if (strcmp(TS, 'f'))
-        title(['SNRg_i vs i for dfdot = ', num2str(df_sig(k))]);
+        title(['SNRg_i vs i for dfdot = ', num2str(df(k))]);
     else
-        title(['SNRg_i vs i for dfdot = ', num2str(dfdot_sig(k))]);
+        title(['SNRg_i vs i for dfdot = ', num2str(dfdot(k))]);
     end
     xlabel('i');
     ylabel('SNRg_i');
@@ -663,14 +668,14 @@ end
 % Plot SNRg_i vs dfdot
 if (PlotSNRvsParam == 1)
     for i = M:N
-        figure(3+length(dfdot_sig)*length(df_sig)+i-M+1)
+        figure(3+length(dfdot)*length(df)+i-M+1)
         subplot(1, 2, 1)
         hold on;        
         if (strcmp(TS, 'f'))
-            si1 = scatter(df_sig, SNRg_iArray(i-M+1, :)/SNRg_iArray(i-M+1, searchScale+1), 'ok');
+            si1 = scatter(df, SNRg_iArray(i-M+1, :)/SNRg_iArray(i-M+1, searchScale+1), 'ok');
             xlabel('df (Hz)');
         else
-            si1 = scatter(dfdot_sig, SNRg_iArray(i-M+1, :)/SNRg_iArray(i-M+1, searchScale+1), 'ok');
+            si1 = scatter(dfdot, SNRg_iArray(i-M+1, :)/SNRg_iArray(i-M+1, searchScale+1), 'ok');
             xlabel('dfdot (Hz/s)');
         end
         title(titleStrings{i-M+1});
@@ -683,10 +688,10 @@ if (PlotSNRvsParam == 1)
 
         subplot(1, 2, 2)
         if (strcmp(TS, 'f'))
-            si2 = scatter(df_sig, SNRg_iArray(i-M+1, :), 'ok');
+            si2 = scatter(df, SNRg_iArray(i-M+1, :), 'ok');
             xlabel('df (Hz)');
         else
-            si2 = scatter(dfdot_sig, SNRg_iArray(i-M+1, :), 'ok');
+            si2 = scatter(dfdot, SNRg_iArray(i-M+1, :), 'ok');
             xlabel('dfdot (Hz/s)');
         end
         title(titleStrings{i-M+1});
@@ -701,7 +706,7 @@ end
 
 %% Animation
 if (Animation == 1)
-    figure(4+length(dfdot_sig)*length(df_sig)+N-M+1)
+    figure(4+length(dfdot)*length(df)+N-M+1)
     if (strcmp(TS, 'f'))
         sgtitle('SNRg_i vs df for Various i', 'FontSize', 20);
     else
@@ -711,12 +716,12 @@ if (Animation == 1)
         for i = M:N
             subplot(1, 2, 1)
             if (strcmp(TS, 'f'))
-                scatter(df_sig, SNRg_iArray(i-M+1, :)/max(SNRg_iArray(i-M+1, :)), 'ok');
-                axis([1.01*min(df), 1.01*max(df_sig), 0, 1]);
+                scatter(df, SNRg_iArray(i-M+1, :)/max(SNRg_iArray(i-M+1, :)), 'ok');
+                axis([1.01*min(df), 1.01*max(df), 0, 1]);
                 xlabel('df (Hz)');
             else
-                scatter(dfdot_sig, SNRg_iArray(i-M+1, :)/max(SNRg_iArray(i-M+1, :)), 'ok');
-                axis([1.01*min(dfdot_sig), 1.01*max(dfdot_sig), 0, 1]);
+                scatter(dfdot, SNRg_iArray(i-M+1, :)/max(SNRg_iArray(i-M+1, :)), 'ok');
+                axis([1.01*min(dfdot), 1.01*max(dfdot), 0, 1]);
                 xlabel('dfdot (Hz/s)');
             end
             ylabel('SNR/SNR_m_a_x');
@@ -728,8 +733,8 @@ if (Animation == 1)
             grid on;
 
             subplot(1, 2, 2)
-            scatter(dfdot_sig, SNRg_iArray(i-M+1, :), 'ok');
-            axis([1.01*min(dfdot_sig), 1.01*max(dfdot_sig), 0, max(SNRg_iArray(:))]);
+            scatter(dfdot, SNRg_iArray(i-M+1, :), 'ok');
+            axis([1.01*min(dfdot), 1.01*max(dfdot), 0, max(SNRg_iArray(:))]);
             xlabel('dfdot (Hz/s)');
             ylabel('SNR');
             legend(['i = ', num2str(i)]);
@@ -744,26 +749,26 @@ if (Animation == 1)
 end
 %% Fit SNRg_i vs dfdot to curve and find dfdot for 20% offset
 if (strcmp(TS, 'f'))
-    dfp = linspace(min(df_sig), max(df_sig), 1.e4*length(df_sig));
-    dfdotp = dfdot_sig;
+    dfp = linspace(min(df), max(df), 1.e4*length(df));
+    dfdotp = dfdot;
 else
-    dfp = df_sig;
-    dfdotp = linspace(min(dfdot_sig), max(dfdot_sig), 1.e4*length(dfdot_sig));
+    dfp = df;
+    dfdotp = linspace(min(dfdot), max(dfdot), 1.e4*length(dfdot));
 end
 SNRsplines = zeros(N-M+1, length(dfdotp)*length(dfp));
 templateSpacings = zeros(N-M+1, 1);
 
 for i = M:N
     if (strcmp(TS, 'f'))
-        SNRsplines(i-M+1, :) = spline(df_sig, SNRg_iArray(i-M+1, :), dfp);
+        SNRsplines(i-M+1, :) = spline(df, SNRg_iArray(i-M+1, :), dfp);
         templateSpacings(i-M+1) = mode(abs(dfp(abs(SNRsplines(i-M+1, :) - 0.8*SNRg_iArray(i-M+1, searchScale+1)) == min(abs(SNRsplines(i-M+1, :) - 0.8*SNRg_iArray(i-M+1, searchScale+1))))));
     else
-        SNRsplines(i-M+1, :) = spline(dfdot_sig, SNRg_iArray(i-M+1, :), dfdotp);
+        SNRsplines(i-M+1, :) = spline(dfdot, SNRg_iArray(i-M+1, :), dfdotp);
         templateSpacings(i-M+1) = mode(abs(dfdotp(abs(SNRsplines(i-M+1, :) - 0.8*SNRg_iArray(i-M+1, searchScale+1)) == min(abs(SNRsplines(i-M+1, :) - 0.8*SNRg_iArray(i-M+1, searchScale+1))))));
     end
     
     if (PlotSNRvsParam == 1)
-        figure(3+length(dfdot_sig)*length(df_sig)+i-M+1)
+        figure(3+length(dfdot)*length(df)+i-M+1)
         subplot(1, 2, 1)
         hold on;
         if (strcmp(TS, 'f'))
@@ -847,9 +852,9 @@ if (OutputFile3 == 1)
     end
     fout3 = fopen(filename3, 'a');
     if (strcmp(TS, 'f'))
-        fprintf(fout3, '%e,', f_sigStepSize);
+        fprintf(fout3, '%e,', fStepSize);
     else
-        fprintf(fout3, '%e,', fdot_sigStepSize);
+        fprintf(fout3, '%e,', fdotStepSize);
     end
     for i = M:N
         if (i == N)
@@ -865,7 +870,7 @@ end
 if (PlotTSvsi_log == 1)
     templateFitCoeffs = polyfit(log10(M:N), log10(templateSpacings), 1);
 
-    figure(5+length(dfdot_sig)+N)
+    figure(5+length(dfdot)+N)
     p5fN = plot(log10(M:N), log10(abs(fitCoeffs*sqrt(log(5/4)))), '-k');
     hold on;
     p5fN2 = plot(log10(M:N), -2*(log10(M:N)-log10(N)) + log10(abs(fitCoeffs(N)*sqrt(log(5/4)))), '-r');
