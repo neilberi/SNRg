@@ -11,7 +11,7 @@ CrossTerms = 0;
 %% Fit f Template Spacings
 
 % Read in and configure data
-fdotvec_sig = -5.*10.^(-9:-5);
+fdotvec_sig = -5.*10.^(-9:-6);
 Ntrials = 10;
 X = [];
 Y = [];
@@ -133,11 +133,12 @@ for k = 1:length(fdotvec_sig)
     sf2000{k}.EdgeColor = rainbowsf{k};
     legends{k} = sprintf('fdot = %0.e Hz/s', fdotvec_sig(k));
 end
-legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends);
+%legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends);
+legend([sf2000{1}, sf2000{2}, sf2000{3}], legends);
 title('f Template Spacings Data (points) vs Model (surfaces)');
 xlabel('log(Tobs) (log(hr))');
 ylabel('log(i)');
-zlabel('log(dfdot) (log(Hz/s))');
+zlabel('log(df) (log(H))');
 grid on;
 hold off;
 ax = gca;
@@ -272,7 +273,7 @@ for k = 1:length(fdotvec_sig)
     s1000 = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*m');
     hold on;
     sf1000 = surf(Tobsmat, imat, modelmats{k});
-    title(['Template Spacing over Tobs and i for fdot = -5.e', num2str(log10(abs(fdotvec_sig(k))/5)), ' Hz/s']);
+    title(['fdot Template Spacing over Tobs and i for fdot = -5.e', num2str(log10(abs(fdotvec_sig(k))/5)), ' Hz/s']);
     xlabel('log(Tobs) (log(hr))');
     ylabel('log(i)');
     zlabel('log(dfdot) (log(Hz/s))');

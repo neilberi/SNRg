@@ -14,7 +14,7 @@ PlotLastTimeSegment = 0;
 PlotTSvsi_log = 0;
 OutputFile1 = 0;
 OutputFile2 = 0;
-OutputFile3 = 0;
+OutputFile3 = 1;
 
 if (OutputFile3 == 1)
     global StepSize_in; %#ok<NUSED,*TLEV>
@@ -49,10 +49,10 @@ noiseamp = hnoise;
 f_sig = 100.;
 
 % Signal frequency derivative (Hz/s)
-fdot_sig = -5.e-7;
+fdot_sig = -5.e-5;
 
 % Length of observation (hr)
-Tobs_hr = 4.;
+Tobs_hr = 16./3.;
 Tobs = Tobs_hr * 3600.;
 if (OutputFile1 == 1)
     if (ParsevalSNR == 1)
@@ -443,7 +443,7 @@ end
 
 % Create vector of f/fdot values (for search)
 searchScale = 20;
-fStepSize = 0.05/Tcoh;
+fStepSize = StepSize_in;
 fdotStepSize = 1.e-3*abs(fdot_sig);
 if (strcmp(TS, 'f'))
     fvec = (f_sig - searchScale*fStepSize):fStepSize:(f_sig + searchScale*fStepSize);
