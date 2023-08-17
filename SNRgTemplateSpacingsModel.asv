@@ -94,23 +94,21 @@ for k = 1:length(fdotvec_sig)
     [Tobsmat, imat] = meshgrid(linspace(log10(1), log10(max(Tobsvecs{k})), 100), linspace(log10(1), log10(max(Nsegvecs{k})), 100));
     modelmats{k} = model_func2(fitParams_fTS, log10(abs(fdotvec_sig(k))), Tobsmat, imat);
     
-    if (PlotConstFdot == 1)
-        figure;
-        s1000 = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*m');
-        hold on;
-        sf1000 = surf(Tobsmat, imat, modelmats{k});
-        title(['f Template Spacing over Tobs and i for fdot = -5.e', num2str(log10(abs(fdotvec_sig(k))/5)), ' Hz/s']);
-        xlabel('log(Tobs) (log(hr))');
-        ylabel('log(i)');
-        zlabel('log(dfdot) (log(Hz/s))');
-        grid on;
-        s1000.LineWidth = 3;
-        sf1000.EdgeAlpha = 0.5;
-        ax = gca; 
-        ax.LineWidth = 3;
-        ax.FontSize = 16;
-        hold off;
-    end
+    figure;
+    s1000 = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*m');
+    hold on;
+    sf1000 = surf(Tobsmat, imat, modelmats{k});
+    title(['f Template Spacing over Tobs and i for fdot = -5.e', num2str(log10(abs(fdotvec_sig(k))/5)), ' Hz/s']);
+    xlabel('log(Tobs) (log(hr))');
+    ylabel('log(i)');
+    zlabel('log(dfdot) (log(Hz/s))');
+    grid on;
+    s1000.LineWidth = 3;
+    sf1000.EdgeAlpha = 0.5;
+    ax = gca; 
+    ax.LineWidth = 3;
+    ax.FontSize = 16;
+    hold off;
 end
 
 % Plot Entire Dataset
@@ -140,13 +138,12 @@ legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends);
 title('f Template Spacings Data (points) vs Model (surfaces)');
 xlabel('log(Tobs) (log(hr))');
 ylabel('log(i)');
-zlabel('log(df) (log(Hz))');
+zlabel('log(df) (log(H))');
 grid on;
 hold off;
 ax = gca;
 ax.LineWidth = 3;
 ax.FontSize = 16;
-view(45, 30);
 
 % Calculate chi^2 contributions
 if (PlotChiSqrContributions == 1)
@@ -272,23 +269,21 @@ for k = 1:length(fdotvec_sig)
     [Tobsmat, imat] = meshgrid(linspace(log10(1), log10(max(Tobsvecs{k})), 100), linspace(log10(1), log10(max(Nsegvecs{k})), 100));
     modelmats{k} = model_func2(fitParams_fdotTS, log10(abs(fdotvec_sig(k))), Tobsmat, imat);
     
-    if (PlotConstFdot == 1)
-        figure;
-        s1000 = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*m');
-        hold on;
-        sf1000 = surf(Tobsmat, imat, modelmats{k});
-        title(['fdot Template Spacing over Tobs and i for fdot = -5.e', num2str(log10(abs(fdotvec_sig(k))/5)), ' Hz/s']);
-        xlabel('log(Tobs) (log(hr))');
-        ylabel('log(i)');
-        zlabel('log(dfdot) (log(Hz/s))');
-        grid on;
-        s1000.LineWidth = 3;
-        sf1000.EdgeAlpha = 0.5;
-        ax = gca; 
-        ax.LineWidth = 3;
-        ax.FontSize = 16;
-        hold off;
-    end
+    figure;
+    s1000 = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*m');
+    hold on;
+    sf1000 = surf(Tobsmat, imat, modelmats{k});
+    title(['fdot Template Spacing over Tobs and i for fdot = -5.e', num2str(log10(abs(fdotvec_sig(k))/5)), ' Hz/s']);
+    xlabel('log(Tobs) (log(hr))');
+    ylabel('log(i)');
+    zlabel('log(dfdot) (log(Hz/s))');
+    grid on;
+    s1000.LineWidth = 3;
+    sf1000.EdgeAlpha = 0.5;
+    ax = gca; 
+    ax.LineWidth = 3;
+    ax.FontSize = 16;
+    hold off;
 end
 
 % Plot Entire Dataset
@@ -313,7 +308,7 @@ for k = 1:length(fdotvec_sig)
     legends{k} = sprintf('fdot = %0.e Hz/s', fdotvec_sig(k));
 end
 legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends);
-title('fdot Template Spacings Data (points) vs Model (surfaces)');
+title('Template Spacings Data (points) vs Model (surfaces)');
 xlabel('log(Tobs) (log(hr))');
 ylabel('log(i)');
 zlabel('log(dfdot) (log(Hz/s))');
@@ -322,7 +317,6 @@ hold off;
 ax = gca;
 ax.LineWidth = 3;
 ax.FontSize = 16;
-view(45, 30);
 
 % Calculate chi^2 contributions
 if (PlotChiSqrContributions == 1)
@@ -446,23 +440,21 @@ for k = 1:length(fdotvec_sig)
     [Tobsmat, imat] = meshgrid(linspace(log10(1), log10(max(Tobsvecs{k})), 100), linspace(log10(1), log10(max(Nsegvecs{k})), 100));
     modelmats{k} = model_func2(fitParams_SNR, log10(abs(fdotvec_sig(k))), Tobsmat, imat);
     
-    if (PlotConstFdot == 1)
-        figure;
-        s1000 = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*m');
-        hold on;
-        sf1000 = surf(Tobsmat, imat, modelmats{k});
-        title(['SNRg_i over Tobs and i for fdot = -5.e', num2str(log10(abs(fdotvec_sig(k))/5)), ' Hz/s']);
-        xlabel('log(Tobs) (log(hr))');
-        ylabel('log(i)');
-        zlabel('log(SNR)');
-        grid on;
-        s1000.LineWidth = 3;
-        sf1000.EdgeAlpha = 0.5;
-        ax = gca; 
-        ax.LineWidth = 3;
-        ax.FontSize = 16;
-        hold off;
-    end
+    figure;
+    s1000 = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*m');
+    hold on;
+    sf1000 = surf(Tobsmat, imat, modelmats{k});
+    title(['SNRg_i over Tobs and i for fdot = -5.e', num2str(log10(abs(fdotvec_sig(k))/5)), ' Hz/s']);
+    xlabel('log(Tobs) (log(hr))');
+    ylabel('log(i)');
+    zlabel('log(SNR)');
+    grid on;
+    s1000.LineWidth = 3;
+    sf1000.EdgeAlpha = 0.5;
+    ax = gca; 
+    ax.LineWidth = 3;
+    ax.FontSize = 16;
+    hold off;
 end
 
 % Plot Entire Dataset
@@ -496,7 +488,6 @@ hold off;
 ax = gca;
 ax.LineWidth = 3;
 ax.FontSize = 16;
-view(45, 30);
 
 % Calculate chi^2 contributions
 if (PlotChiSqrContributions == 1)

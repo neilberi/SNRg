@@ -22,7 +22,7 @@ fitDegree = 1;
 %% Read in and configure data
 
 % Select fdot value (Hz/s)
-fdot_sig = -5.e-6; % One of the following: -5.e-9, -5.e-8, -5.e-7, -5.e-6, -5.e-5
+fdot_sig = -5.e-5; % One of the following: -5.e-9, -5.e-8, -5.e-7, -5.e-6, -5.e-5
 
 Tcoh_hr = 1./3600.*sqrt(0.5/abs(fdot_sig));
 Tcoh = Tcoh_hr * 3600.;
@@ -375,7 +375,11 @@ if (OutputFile == 1)
 end
 
 % Print model function with optimized parameters
-fprintf('Surface fit: log(dfdot) = \n');
+if (strcmp(TS, 'f'))
+    fprintf('Surface fit: log(df) = \n');
+else
+    fprintf('Surface fit: log(dfdot) = \n');
+end
 if (fitDegree == 3)
     fprintf('\t  (%f +/- %f)*log(Tobs)^3 +\n', fitCoeffs(1), d(1));
     fprintf('\t+ (%f +/- %f)*log(Tobs)^2*log(i)\n', fitCoeffs(2), d(2));

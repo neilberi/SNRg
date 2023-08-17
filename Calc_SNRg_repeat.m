@@ -5,14 +5,14 @@ clear global;
 clc;
 close all;
 
-OutputFile = 3; % Choose 2 or 3 to agree with CalculateSNRg.m
+OutputFile = 2; % Choose 2 or 3 to agree with CalculateSNRg.m
 
 %% Run the program with appropriate settings
 
 if (OutputFile == 2)
 
 % OutputFile2
-    for TSTrial = 1:10
+    for TSTrial = 1:5
         run CalculateSNRg.m
     end
 

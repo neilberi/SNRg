@@ -9,12 +9,12 @@ ParsevalSNR = 1;
 RealPartDS = 0;
 Animation = 0;
 NequalNseg = 1;
-PlotSNRvsParam = 1;
+PlotSNRvsParam = 0;
 PlotLastTimeSegment = 0;
 PlotTSvsi_log = 0;
 OutputFile1 = 0;
-OutputFile2 = 0;
-OutputFile3 = 1;
+OutputFile2 = 1;
+OutputFile3 = 0;
 
 if (OutputFile3 == 1)
     global StepSize_in; %#ok<NUSED,*TLEV>
@@ -26,8 +26,8 @@ TS = 'f'; % Choose 'f' or 'fdot'
 %% Generate Signal Spectrogram
 
 % SNR1 and {SNRg_i | M<=i<=N} will be calculated
-M = 1;
-N = 100;
+M = 31;
+N = 300;
 Ntrial = 10;
 if (OutputFile1 == 0)
     Ntrial = 1;
@@ -52,7 +52,7 @@ f_sig = 100.;
 fdot_sig = -5.e-5;
 
 % Length of observation (hr)
-Tobs_hr = 16./3.;
+Tobs_hr = 32.;
 Tobs = Tobs_hr * 3600.;
 if (OutputFile1 == 1)
     if (ParsevalSNR == 1)
@@ -443,7 +443,7 @@ end
 
 % Create vector of f/fdot values (for search)
 searchScale = 20;
-fStepSize = StepSize_in;
+fStepSize = 4.94462e-6;
 fdotStepSize = 1.e-3*abs(fdot_sig);
 if (strcmp(TS, 'f'))
     fvec = (f_sig - searchScale*fStepSize):fStepSize:(f_sig + searchScale*fStepSize);
