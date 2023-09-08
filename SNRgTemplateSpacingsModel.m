@@ -8,6 +8,7 @@ ParsevalSNR = 1;
 PlotChiSqrContributions = 0;
 PlotConstFdot = 0;
 CrossTerms = 0;
+SaveParams = 0;
 
 %% Fit f Template Spacings
 
@@ -67,12 +68,12 @@ for l = 1:3
     initialFitParams((2*l-1):(2*l)) = nlinfit(log10(abs(fdotvec_sig)), plane_fitParams(:, l), lin_model, -rand(1, 2));
 end
 if(CrossTerms == 0)
-    initialFitParams = initialFitParams([1 3 5 6]);
+    initialFitParams = initialFitParams([1 3 6 5]);
 end
 
 model_func = @(a, X) a(1).*X(:, 2) + ...
                      a(2).*X(:, 3) + ...
-                     a(3) + a(4).*X(:, 1);
+                     a(3).*X(:, 1) + a(4);
 
 options = optimset("Display", "off");
 [fitParams_fTS, dParams_fTS, gof_fTS] = fitChiSquare(X, Y, model_func, initialFitParams, zeros(height(X), 3), dY, options);
@@ -86,7 +87,7 @@ if (CrossTerms == 1)
 else
     model_func2 = @(a, fdot_log, Tobs_log, i_log) a(1).*Tobs_log + ...
                                                   a(2).*i_log + ...
-                                                  a(3) + a(4).*fdot_log;
+                                                  a(3).*fdot_log + a(4);
 end
 
 modelmats = cell(length(fdotvec_sig));
@@ -187,8 +188,8 @@ if (CrossTerms == 1)
 else 
     fprintf('log(TS_f) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_fTS(1), dParams_fTS(1).d);
     fprintf('\t(%f +/- %f)log(i) +\n', fitParams_fTS(2), dParams_fTS(2).d);
-    fprintf('\t(%f +/- %f) +\n', fitParams_fTS(3), dParams_fTS(3).d);
-    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_fTS(4), dParams_fTS(4).d);
+    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_fTS(3), dParams_fTS(3).d);
+    fprintf('\t(%f +/- %f) +\n', fitParams_fTS(4), dParams_fTS(4).d);
 end
 fprintf('Chi^2 = %f\n', gof_fTS.chi2);
 fprintf('Chi^2/dof = %f\n\n', gof_fTS.chi2/gof_fTS.dof);
@@ -245,12 +246,12 @@ for l = 1:3
     initialFitParams((2*l-1):(2*l)) = nlinfit(log10(abs(fdotvec_sig)), plane_fitParams(:, l), lin_model, -rand(1, 2));
 end
 if(CrossTerms == 0)
-    initialFitParams = initialFitParams([1 3 5 6]);
+    initialFitParams = initialFitParams([1 3 6 5]);
 end
 
 model_func = @(a, X) a(1).*X(:, 2) + ...
                      a(2).*X(:, 3) + ...
-                     a(3) + a(4).*X(:, 1);
+                     a(3).*X(:, 1) + a(4);
 
 options = optimset("Display", "off");
 [fitParams_fdotTS, dParams_fdotTS, gof_fdotTS] = fitChiSquare(X, Y, model_func, initialFitParams, zeros(height(X), 3), dY, options);
@@ -264,7 +265,7 @@ if (CrossTerms == 1)
 else
     model_func2 = @(a, fdot_log, Tobs_log, i_log) a(1).*Tobs_log + ...
                                                   a(2).*i_log + ...
-                                                  a(3) + a(4).*fdot_log;
+                                                  a(3).*fdot_log + a(4);
 end
 
 modelmats = cell(length(fdotvec_sig));
@@ -363,8 +364,8 @@ if (CrossTerms == 1)
 else 
     fprintf('log(TS_fdot) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_fdotTS(1), dParams_fdotTS(1).d);
     fprintf('\t(%f +/- %f)log(i) +\n', fitParams_fdotTS(2), dParams_fdotTS(2).d);
-    fprintf('\t(%f +/- %f) +\n', fitParams_fdotTS(3), dParams_fdotTS(3).d);
-    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_fdotTS(4), dParams_fdotTS(4).d);
+    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_fdotTS(3), dParams_fdotTS(3).d);
+    fprintf('\t(%f +/- %f) +\n', fitParams_fdotTS(4), dParams_fdotTS(4).d);
 end
 fprintf('Chi^2 = %f\n', gof_fdotTS.chi2);
 fprintf('Chi^2/dof = %f\n\n', gof_fdotTS.chi2/gof_fdotTS.dof);
@@ -419,12 +420,12 @@ for l = 1:3
     initialFitParams((2*l-1):(2*l)) = nlinfit(log10(abs(fdotvec_sig)), plane_fitParams(:, l), lin_model, -rand(1, 2));
 end
 if(CrossTerms == 0)
-    initialFitParams = initialFitParams([1 3 5 6]);
+    initialFitParams = initialFitParams([1 3 6 5]);
 end
 
 model_func = @(a, X) a(1).*X(:, 2) + ...
                      a(2).*X(:, 3) + ...
-                     a(3) + a(4).*X(:, 1);
+                     a(3).*X(:, 1) + a(4);
 
 options = optimset("Display", "off");
 [fitParams_SNR, dParams_SNR, gof_SNR] = fitChiSquare(X, Y, model_func, initialFitParams, zeros(height(X), 3), dY, options);
@@ -438,7 +439,7 @@ if (CrossTerms == 1)
 else
     model_func2 = @(a, fdot_log, Tobs_log, i_log) a(1).*Tobs_log + ...
                                                   a(2).*i_log + ...
-                                                  a(3) + a(4).*fdot_log;
+                                                  a(3)*fdot_log + a(4);
 end
 
 modelmats = cell(length(fdotvec_sig));
@@ -519,7 +520,7 @@ if (PlotChiSqrContributions == 1)
         sfk = surf(Tobsmat, imat, chisqrContributions{j});
         title(sprintf('Chi^2 Contributions from Each Data Point fdot = %2.e Hz/s', fdotvec_sig(j)));
         xlabel('Tobs (hr)');
-        ylabel('i')
+        ylabel('i');
         ax = gca;
         ax.FontSize = 16;
         ax.LineWidth = 3;
@@ -537,8 +538,14 @@ if (CrossTerms == 1)
 else 
     fprintf('log(SNRg_i) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_SNR(1), dParams_SNR(1).d);
     fprintf('\t(%f +/- %f)log(i) +\n', fitParams_SNR(2), dParams_SNR(2).d);
-    fprintf('\t(%f +/- %f) +\n', fitParams_SNR(3), dParams_SNR(3).d);
-    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_SNR(4), dParams_SNR(4).d);
+    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_SNR(3), dParams_SNR(3).d);
+    fprintf('\t(%f +/- %f) +\n', fitParams_SNR(4), dParams_SNR(4).d);
 end
 fprintf('Chi^2 = %f\n', gof_SNR.chi2);
 fprintf('Chi^2/dof = %f\n\n', gof_SNR.chi2/gof_SNR.dof);
+
+%% Save Fit Parameters
+
+if (SaveParams == 1)
+    writematrix([fitParams_fTS; fitParams_fdotTS; fitParams_SNR], 'SNRgModelParams.csv');
+end

@@ -13,7 +13,7 @@ PlotSNRvsParam = 0;
 PlotLastTimeSegment = 0;
 PlotTSvsi_log = 0;
 OutputFile1 = 0;
-OutputFile2 = 1;
+OutputFile2 = 0;
 OutputFile3 = 0;
 
 if (OutputFile3 == 1)
@@ -23,10 +23,10 @@ end
 
 TS = 'f'; % Choose 'f' or 'fdot'
 
-%% Generate Signal Spectrogram
+%% Generate Data Spectrogram
 
 % SNR1 and {SNRg_i | M<=i<=N} will be calculated
-M = 31;
+M = 1;
 N = 300;
 Ntrial = 10;
 if (OutputFile1 == 0)
@@ -49,10 +49,10 @@ noiseamp = hnoise;
 f_sig = 100.;
 
 % Signal frequency derivative (Hz/s)
-fdot_sig = -5.e-5;
+fdot_sig = -5.e-7;
 
 % Length of observation (hr)
-Tobs_hr = 32.;
+Tobs_hr = 4.;
 Tobs = Tobs_hr * 3600.;
 if (OutputFile1 == 1)
     if (ParsevalSNR == 1)
@@ -173,6 +173,7 @@ for trial = 1:Ntrial
     figure(1);
     fprintf('Creating spectrogram plot with %d time bins (columns) and %d frequency bins (rows)...\n',Nseg,nbandbin);
     s1 = surf(seghour,freqplot,plotSpectrogram);
+    s1.EdgeAlpha = 0.5;
     title('Raw spectrogram');
     xlabel('Time (hours)');
     ylabel('Frequency (Hz)');
@@ -184,22 +185,12 @@ for trial = 1:Ntrial
 
     %% Calculate Detection Statistics
 
-    % Create vector of column midpoints
-    tMid = zeros(1, Nseg);
-    for tIndex = 1:Nseg
-    tMid(tIndex) = (tIndex - 0.5)*Tcoh;
-    end
-
-    tMid_hr = tMid./3600;
-
-    % Create vector of indices for frequency trajectory
-    freqTrajIndex = zeros(1, Nseg);
-    for tIndex = 1:Nseg
-        freqTrajIndex(tIndex) = find(t == tMid(tIndex));
-    end
+    % Create vector of indices for frequency trajectory in the middle of each time segment
+    freqTrajIndex = ((1:Nseg) - 0.5).*Nsample_coh + 1;
+    tMid = t(freqTrajIndex);
 
     % Calculate expected phase/frequency trajectories and signal
-    freqTraj = f_sig + fdot_sig.*t;
+    freqTraj = f_sig + fdot_sig.*tMid;
     phaseTraj = 2*pi.*(f_sig.*t + 0.5*fdot_sig.*t.^2);
     searchSignal = hamp.*sin(phaseTraj);
 
@@ -213,17 +204,8 @@ for trial = 1:Ntrial
         searchSpectrogram(1:nbandbin,seg) = searchRawfft(indbandlo:indbandhi)*fftNormalization;
     end
 
-    % Find predicted frequency at each column midpoint
-    fMid = zeros(1, Nseg);
-    for tIndex = 1:Nseg
-        fMid(tIndex) = freqTraj(freqTrajIndex(tIndex));
-    end
-
     % Calculate signal frequency indices
-    fIndex = zeros(1, Nseg);
-    for tIndex = 1:Nseg
-        fIndex(tIndex) = find(abs(freqplot - fMid(tIndex)) == min(abs(freqplot - fMid(tIndex))), 1, 'first');
-    end
+    fIndex = round((freqTraj-freqlo)*Tcoh) + 1;
 
     % Calculate background noise frequency indices
     fIndex_noise = zeros(nNoiseSample, Nseg);
@@ -439,7 +421,11 @@ if (NequalNseg == 1 && M == 1 && Nseg >= 4)
     ax.FontSize = 15;
 
 end
-%% Calculate SNR for Various f/fdot
+%% Generate Templates and Calculate SNRs
+
+% Calculate template spacings from model
+SNRgModelParams = readmatrix('SNRgModelParams.csv');
+TS_model = @(a, i, Tobs, fdot) 10^a(4)*Tobs^a(1)*i^a(2)*abs(fdot)^a(3);
 
 % Create vector of f/fdot values (for search)
 searchScale = 20;
@@ -467,7 +453,7 @@ for r = 1:length(fvec)
         end
         
         % Calculate expected phase/frequency trajectories and signal
-        freqTraj = fvec(r) + fdotvec(j).*t; 
+        freqTraj = fvec(r) + fdotvec(j).*tMid; 
         phaseTraj = 2*pi.*(fvec(r).*t + 0.5*fdotvec(j).*t.^2);
         searchSignal = hamp.*sin(phaseTraj);
     
@@ -481,28 +467,21 @@ for r = 1:length(fvec)
             searchSpectrogram(1:nbandbin,seg) = searchRawfft(indbandlo:indbandhi)*fftNormalization;
         end
     
-        % Find predicted frequency at each column midpoint
-        fMid = zeros(1, Nseg);
-        for tIndex = 1:Nseg
-            fMid(tIndex) = freqTraj(freqTrajIndex(tIndex));
-        end
-    
         % Calculate signal frequency indices
-        fIndex = zeros(1, Nseg);
-        for tIndex = 1:Nseg
-            fIndex(tIndex) = find(abs(freqplot - fMid(tIndex)) == min(abs(freqplot - fMid(tIndex))), 1, 'first');
-        end
-        
+        fIndex = round((freqTraj-freqlo)*Tcoh) + 1;
+
         % Calculate background noise frequency indices
-        fIndex_noise = zeros(nNoiseSample, Nseg);
-        for k = 1:nNoiseSample
-            fIndex_noise(k, :) = fIndex + 10*k + noiseOffset;
+        if (ParsevalSNR == 0)
+            fIndex_noise = zeros(nNoiseSample, Nseg);
+            for k = 1:nNoiseSample
+                fIndex_noise(k, :) = fIndex + 10*k + noiseOffset;
+            end
         end
     
         % Calculate weights array
         weight = (1+sqrt(-1)).*zeros(nbandbin,Nseg);
         for tIndex = 1:Nseg
-            weight(:, tIndex) = hamp.*searchSpectrogram(:, tIndex)/sum(abs(searchSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2);
+            %weight(:, tIndex) = hamp.*searchSpectrogram(:, tIndex)/sum(abs(searchSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2);
             weight(:, tIndex) = searchSpectrogram(:, tIndex).*abs(searchSpectrogram(:, tIndex)).^2/sum(abs(searchSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2);
         end
     
@@ -510,9 +489,11 @@ for r = 1:length(fvec)
         signalDS1 = 0;
         signalDSg_i = zeros(N-M+1, 1);
         grouper_sig = (1+sqrt(-1)).*zeros(N-M+1, 1);
-        noiseDS1 = zeros(1, nNoiseSample);
-        noiseDSg_i = (1+sqrt(-1)).*zeros(N-M+1, nNoiseSample);
-        grouper_noise = (1+sqrt(-1)).*zeros(N-M+1, nNoiseSample);
+        if (ParsevalSNR == 0)
+            noiseDS1 = zeros(1, nNoiseSample);
+            noiseDSg_i = (1+sqrt(-1)).*zeros(N-M+1, nNoiseSample);
+            grouper_noise = (1+sqrt(-1)).*zeros(N-M+1, nNoiseSample);
+        end
     
         if (j*r == 15)
             DScontributions15 = zeros(1, Nseg);
@@ -548,21 +529,23 @@ for r = 1:length(fvec)
             end
     
             % Noise detection statistics
-            for k = 1:nNoiseSample
-                noiseDS1(k) = noiseDS1(k) + (abs(spectrogram(fIndex_noise(k, tIndex), tIndex)))^2;
-                grouper_noise(:, k) = grouper_noise(:, k) + sum(conj(weight((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).*rawSpectrogram((fIndex_noise(k, tIndex)-nBinSide):(fIndex_noise(k, tIndex)+nBinSide), tIndex));
-            end
-            for i = M:N
-                if (RealPartDS == 1)
-                    contribution = real(grouper_noise(i-M+1, :)); 
-                else
-                    contribution = abs(grouper_noise(i-M+1, :)).^2;
+            if (ParsevalSNR == 0)
+                for k = 1:nNoiseSample
+                    noiseDS1(k) = noiseDS1(k) + (abs(spectrogram(fIndex_noise(k, tIndex), tIndex)))^2;
+                    grouper_noise(:, k) = grouper_noise(:, k) + sum(conj(weight((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).*rawSpectrogram((fIndex_noise(k, tIndex)-nBinSide):(fIndex_noise(k, tIndex)+nBinSide), tIndex));
                 end
-                if (mod(tIndex, i) == 0)
-                    noiseDSg_i(i-M+1, :) = noiseDSg_i(i-M+1, :) + contribution;
-                    grouper_noise(i-M+1, :) = 0;
-                elseif (tIndex == Nseg)
-                    noiseDSg_i(i-M+1, :) = noiseDSg_i(i-M+1, :) + contribution;
+                for i = M:N
+                    if (RealPartDS == 1)
+                        contribution = real(grouper_noise(i-M+1, :)); 
+                    else
+                        contribution = abs(grouper_noise(i-M+1, :)).^2;
+                    end
+                    if (mod(tIndex, i) == 0)
+                        noiseDSg_i(i-M+1, :) = noiseDSg_i(i-M+1, :) + contribution;
+                        grouper_noise(i-M+1, :) = 0;
+                    elseif (tIndex == Nseg)
+                        noiseDSg_i(i-M+1, :) = noiseDSg_i(i-M+1, :) + contribution;
+                    end
                 end
             end
         end
@@ -747,7 +730,8 @@ if (Animation == 1)
         end
     end
 end
-%% Fit SNRg_i vs dfdot to curve and find dfdot for 20% offset
+%% Fit SNRg_i to Curve in Parameter Space to Calculate TS
+
 if (strcmp(TS, 'f'))
     dfp = linspace(min(df), max(df), 1.e4*length(df));
     dfdotp = dfdot;
