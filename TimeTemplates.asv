@@ -13,12 +13,26 @@ Skip2TimeFields = 0;
 
 TS = 'f'; % Choose 'f' or 'fdot'
 TimeType = 'cpu'; % Choose 'cpu' or 'real'
+OutputFile = 1;
+if (OutputFile == 1)
+    NequalNseg = 0;
+    global TobsIn; 
+    global TobsIn_vec;
+    global fdotIn;
+    global fdotIn_vec;
+    global iIn;
+    global Ntrials;
+end
 
 %% Generate Data Spectrogram
 
 % SNR1 and {SNRg_i | M<=i<=N} will be calculated
 M = 1;
 N = 1;
+if (OutputFile == 1)
+    M = iIn;
+    N = iIn;
+end
 
 % Set information on noise samples
 nNoiseSample = 10;
@@ -37,9 +51,15 @@ f_sig = 10.;
 
 % Signal frequency derivative (Hz/s)
 fdot_sig = -5.e-7;
+if (OutputFile == 1)
+    fdot_sig = fdotIn;
+end
 
 % Length of observation (hr)
 Tobs_hr = 8.;
+if (OutputFile == 1)
+    Tobs_hr = TobsIn;
+end
 Tobs = Tobs_hr * 3600.;
 
 % Coherence time (hr) - choose so that signal drifts 0.5 bin per coherence time
@@ -69,6 +89,9 @@ TS_model = @(a, i, Tobs_hr, fdot) 10^a(4)*Tobs^a(1)*i^a(2)*abs(fdot)^a(3);
 
 % Create vector of f/fdot values (for search)
 searchScale = 0;
+if (OutputFile == 1)
+    searchScale = 0;
+end
 fStepSize = TS_model(SNRgModelParams(1, :), (N+M)/2, Tobs_hr, fdot_sig);
 fdotStepSize = TS_model(SNRgModelParams(2, :), (N+M)/2, Tobs_hr, fdot_sig);
 if (strcmp(TS, 'f'))
@@ -296,15 +319,15 @@ for k = 1:numel(times)
     times{k} = timestruct;
     execLines = profiles{k}.FunctionTable.ExecutedLines;
     
-    times{k}.TimeDomainSignal = sum(execLines(logical((201 <= execLines(:, 1)).*(execLines(:, 1) <= 203)), 3));
-    times{k}.SegmentAndFFT = sum(execLines(logical((206 <= execLines(:, 1)).*(execLines(:, 1) <= 213)), 3));
-    times{k}.CalcfIndex = sum(execLines(logical((216 <= execLines(:, 1)).*(execLines(:, 1) <= 224)), 3));
-    times{k}.CalcWeights = sum(execLines(logical((227 <= execLines(:, 1)).*(execLines(:, 1) <= 231)), 3));
-    times{k}.CalcDS = sum(execLines(logical((233 <= execLines(:, 1)).*(execLines(:, 1) <= 268)), 3));
-    times{k}.CalcSNR = sum(execLines(logical((271 <= execLines(:, 1)).*(execLines(:, 1) <= 277)), 3));
+    times{k}.TimeDomainSignal = sum(execLines(logical((224 <= execLines(:, 1)).*(execLines(:, 1) <= 226)), 3));
+    times{k}.SegmentAndFFT = sum(execLines(logical((229 <= execLines(:, 1)).*(execLines(:, 1) <= 236)), 3));
+    times{k}.CalcfIndex = sum(execLines(logical((239 <= execLines(:, 1)).*(execLines(:, 1) <= 247)), 3));
+    times{k}.CalcWeights = sum(execLines(logical((250 <= execLines(:, 1)).*(execLines(:, 1) <= 254)), 3));
+    times{k}.CalcDS = sum(execLines(logical((256 <= execLines(:, 1)).*(execLines(:, 1) <= 291)), 3));
+    times{k}.CalcSNR = sum(execLines(logical((294 <= execLines(:, 1)).*(execLines(:, 1) <= 300)), 3));
 end
 
-
+if (OutputFile == 0)
 % Plot times for each template and for all templates
 fn = fieldnames(timestruct);
 if (Skip2TimeFields == 1)
@@ -344,3 +367,10 @@ ax.LineWidth = 3;
 ax.FontSize = 15;
 grid on;
 
+%% Export total times
+
+if (OutputFile == 1)
+    filename = 'SNRgTemplateComputationTimes.csv';
+    fout = fopen(filename, 'a');
+    fprintf(fout, '%e, %e, %e, %e\n', Tobs_hr, N, fdot_sig, sum(execLines(:, 3)));
+end

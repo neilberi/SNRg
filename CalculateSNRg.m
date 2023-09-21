@@ -27,7 +27,7 @@ TS = 'f'; % Choose 'f' or 'fdot'
 
 % SNR1 and {SNRg_i | M<=i<=N} will be calculated
 M = 1;
-N = 300;
+N = 100;
 Ntrial = 10;
 if (OutputFile1 == 0)
     Ntrial = 1;
@@ -39,20 +39,20 @@ noiseOffset = 50;
 nBinSide = 4;
 
 % Sampling frequency
-fsamp = 1024.;
+fsamp = 128.;
 
 % Noise ASD ( / sqrt(Hz) )
 hnoise = 12;
 noiseamp = hnoise;
 
 % Signal initial frequency (Hz)
-f_sig = 100.;
+f_sig = 10.;
 
 % Signal frequency derivative (Hz/s)
 fdot_sig = -5.e-7;
 
 % Length of observation (hr)
-Tobs_hr = 4.;
+Tobs_hr = 8.;
 Tobs = Tobs_hr * 3600.;
 if (OutputFile1 == 1)
     if (ParsevalSNR == 1)
@@ -70,17 +70,6 @@ Tcoh = Tcoh_hr * 3600.;
 Tcoh = floor(Tcoh);
 Tcoh_hr = Tcoh/3600.;
 
-% DO NOT TOUCH/CARE
-searchScale = 0;
-
-fStepSize = (0.1)/Tcoh*(Tcoh < Tobs) + 0.3/sqrt(0.5/(1.e-6))*(Tcoh >= Tobs);
-fvec = (f_sig-searchScale*fStepSize) : fStepSize : (f_sig+searchScale*fStepSize);
-
-fdotStepSize = (7.8e-6)*abs(fdot_sig)*(fdot_sig ~= 0) + 1.e-7*(fdot_sig == 0);
-fdotvec = (fdot_sig-searchScale*fdotStepSize) : fdotStepSize : (fdot_sig+searchScale*fdotStepSize);
-
-[F, Fdot] = meshgrid(fvec, fdotvec);
-
 % Adjust observation time to be exactly an integer number of coherence times to avoid binning headaches
 Nseg = floor(Tobs/Tcoh);
 if (NequalNseg == 1)
@@ -93,10 +82,32 @@ fprintf('Observation time = %d sec (%f hr)\n',Tobs,Tobs_hr);
 fprintf('Coherence time per segment = %d sec (%f hr)\n',Tcoh,Tcoh_hr);
 assert(M<=N, 'Error: M>N');
 
+% Calculate template spacings from model
+SNRgModelParams = readmatrix('SNRgModelParams.csv');
+TS_model = @(a, i, Tobs, fdot) 10^a(4)*Tobs^a(1)*i^a(2)*abs(fdot)^a(3);
+
+% Create vector of f/fdot values (for search)
+searchScale = 1;
+fStepSize = TS_model(SNRgModelParams(1, :), (N+M)/2, Tobs_hr, fdot_sig);
+fdotStepSize = TS_model(SNRgModelParams(2, :), (N+M)/2, Tobs_hr, fdot_sig);
+if (strcmp(TS, 'f'))
+    fvec = (f_sig - searchScale*fStepSize):fStepSize:(f_sig + searchScale*fStepSize);
+    fdotvec = fdot_sig;
+    SNR1Array = zeros(1, length(fvec));
+    SNRg_iArray = zeros(N-M+1, length(fvec));
+else
+    fvec = f_sig;
+    fdotvec = (fdot_sig - searchScale*fdotStepSize):fdotStepSize:(fdot_sig + searchScale*fdotStepSize);
+    SNR1Array = zeros(1, length(fdotvec));
+    SNRg_iArray = zeros(N-M+1, length(fdotvec));
+end
+
+% Set fft normalizations
 % Set noise power mean and standard deviation from Parseval's Theorem
+fftNormalization = (Tcoh*fsamp*noiseamp^2)^(-0.5);
 if (ParsevalSNR == 1)
-    noiseMean = 1;
-    noiseSTD = 1;
+    noiseMean = Nseg*(2*nBinSide+1)^2;
+    noiseSTD = Nseg*(2*nBinSide+1)^2;
 end
 
 % Define time series to hold raw data stream of signal plus noise
@@ -109,7 +120,7 @@ bandscale = 115; % Increase if fIndex is too high/low
 f_siglo = min(f_sig,f_sig+fdot_sig*Tobs);
 f_sighi = max(f_sig,f_sig+fdot_sig*Tobs);
 freqlo_approx = min(fvec)+min(fdotvec)*Tobs - (noiseOffset + nNoiseSample + nBinSide)/Tcoh - bandscale/Tcoh;
-freqhi_approx = max(fvec)+max(fdotvec)*Tobs*(max(fdotvec) > 0) + (noiseOffset + nNoiseSample + nBinSide)/Tcoh + bandscale/Tcoh;
+freqhi_approx = max(fvec) + max(fdotvec)*Tobs*(max(fdotvec) > 0) + (noiseOffset + nNoiseSample + nBinSide)/Tcoh + bandscale/Tcoh;
 freqhi = ceil(freqhi_approx * Tcoh)/Tcoh;
 freqlo = floor(freqlo_approx * Tcoh)/Tcoh;
 bandwidth = freqhi - freqlo;
@@ -126,7 +137,7 @@ for trial = 1:Ntrial
     noise = noiseamp*random('norm',0.,1.,1.,Nsample);
 
     % Signal amplitude (no antenna pattern) 
-    hamp = 1;
+    hamp = 1.;
 
     % Generate signal in time domain
     signal = hamp*sin(2*pi*(f_sig*t + 0.5*fdot_sig*t.^2));
@@ -140,7 +151,6 @@ for trial = 1:Ntrial
     Nsample_coh = floor(Nsample / Nseg);
     spectrogram = zeros(nbandbin,Nseg);
     rawSpectrogram = (1+sqrt(-1)).*zeros(nbandbin,Nseg);
-    fftNormalization = sqrt(1/Tcoh/fsamp)/noiseamp;
     for seg = 1:Nseg
        fprintf('Generating segment %d\n',seg);
        indlo = (seg-1)*Nsample_coh + 1;
@@ -201,7 +211,7 @@ for trial = 1:Ntrial
         indhi = indlo + Nsample_coh - 1;
         searchSegment = searchSignal(indlo:indhi);
         searchRawfft = fft(searchSegment, Nsample_coh);
-        searchSpectrogram(1:nbandbin,seg) = searchRawfft(indbandlo:indbandhi)*fftNormalization;
+        searchSpectrogram(1:nbandbin,seg) = searchRawfft(indbandlo:indbandhi);
     end
 
     % Calculate signal frequency indices
@@ -214,12 +224,13 @@ for trial = 1:Ntrial
     end
 
     % Calculate weights array
+    
     weight = (1+sqrt(-1)).*zeros(nbandbin,Nseg);
     for tIndex = 1:Nseg
         %weight(:, tIndex) = hamp.*searchSpectrogram(:, tIndex)/sum(abs(searchSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2);
-        weight(:, tIndex) = searchSpectrogram(:, tIndex).*abs(searchSpectrogram(:, tIndex)).^2/sum(abs(searchSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2);
+        weight(:, tIndex) = searchSpectrogram(:, tIndex).*abs(searchSpectrogram(:, tIndex))/sum(abs(searchSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2);
     end
-
+    
     % Calculate detection statistics
     signalDS1 = 0;
     signalDSg_i = zeros(N-M+1, 1);
@@ -422,26 +433,6 @@ if (NequalNseg == 1 && M == 1 && Nseg >= 4)
 
 end
 %% Generate Templates and Calculate SNRs
-
-% Calculate template spacings from model
-SNRgModelParams = readmatrix('SNRgModelParams.csv');
-TS_model = @(a, i, Tobs, fdot) 10^a(4)*Tobs^a(1)*i^a(2)*abs(fdot)^a(3);
-
-% Create vector of f/fdot values (for search)
-searchScale = 20;
-fStepSize = 4.94462e-6;
-fdotStepSize = 1.e-3*abs(fdot_sig);
-if (strcmp(TS, 'f'))
-    fvec = (f_sig - searchScale*fStepSize):fStepSize:(f_sig + searchScale*fStepSize);
-    fdotvec = fdot_sig;
-    SNR1Array = zeros(1, length(fvec));
-    SNRg_iArray = zeros(N-M+1, length(fvec));
-else
-    fvec = f_sig;
-    fdotvec = (fdot_sig - searchScale*fdotStepSize):fdotStepSize:(fdot_sig + searchScale*fdotStepSize);
-    SNR1Array = zeros(1, length(fdotvec));
-    SNRg_iArray = zeros(N-M+1, length(fdotvec));
-end
 
 for r = 1:length(fvec)
     for j = 1:length(fdotvec)
@@ -882,3 +873,12 @@ if (PlotTSvsi_log == 1)
 
 fprintf('Template spacing for Tobs = %f hr: dfdot = %e * i^(%f)\n', Tobs_hr, 10^(templateFitCoeffs(2)), templateFitCoeffs(1));
 end
+
+%%
+fprintf('signal DS: %e\n', signalDSg_i(1))
+fprintf('noise DS mean: %e\n', mean(noiseDSg_i(1, :)));
+fprintf('noise DS std: %e\n', std(noiseDSg_i(1, :)));
+fprintf('average noise power per bin: %f\n', mean(abs(fft(noise(1:Nsample_coh)*fftNormalization).^2)));
+fprintf('std of noise power per bin: %f\n', std(abs(fft(noise(1:Nsample_coh)*fftNormalization).^2)))
+fprintf('SNR_empirical: %e\n', abs(signalDSg_i(1)-mean(noiseDSg_i(1, :)))/std(noiseDSg_i(1, :)));
+fprintf('SNR_Parseval: %e\n', SNRg_iArray(1, 1));

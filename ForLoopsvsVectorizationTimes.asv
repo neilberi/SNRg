@@ -1,0 +1,69 @@
+%% Compares Vector Operations to For Loop's of Operations
+
+clear;
+clc;
+close all;
+
+Ntrials = 20;
+Npowsof2 = 11;
+
+%% Addition
+
+addTimes_vec = zeros(Ntrials, Npowsof2);
+addTimes_for = zeros(Ntrials, Npowsof2);
+
+for t = 1:Ntrials
+    for powof2 = 0:(Npowsof2-1)
+        N = round(2.^powof2);
+        vec1 = rand(1, N);
+        vec2 = rand(1, N);
+        profile on -timer 'cpu';
+    
+        % Add to vec 1 using vectorization
+        vec1 = vec1 + rand(1, N);
+    
+        % Add to vec 2 using for loop
+        for i = 1:N
+            vec2(i) = vec2(i) + rand;
+        end
+    
+        p = profile('info');
+        execLines = p.FunctionTable.ExecutedLines;
+        addTimes_vec(t, powof2+1) = sum(execLines(logical(execLines(:, 1) == 23)));
+        addTimes_for(t, powof2+1) = sum(execLines(logical((execLines(:, 1) >= 26).*(execLines <= 28))));
+    end
+end
+
+addTimes_vec = mean(addTimes_vec);
+addTimes_for = mean(addTimes_for);
+
+%% Addition
+
+multTimes_vec = zeros(Ntrials, Npowsof2);
+multTimes_for = zeros(Ntrials, Npowsof2);
+
+for t = 1:Ntrials
+    for powof2 = 0:(Npowsof2-1)
+        N = round(2.^powof2);
+        vec1 = rand(1, N);
+        vec2 = rand(1, N);
+        profile on -timer 'cpu';
+    
+        % Add to vec 1 using vectorization
+        vec1 = vec1 + rand(1, N);
+    
+        % Add to vec 2 using for loop
+        for i = 1:N
+            vec2(i) = vec2(i) + rand;
+        end
+    
+        p = profile('info');
+        execLines = p.FunctionTable.ExecutedLines;
+        multTimes_vec(t, powof2+1) = sum(execLines(logical(execLines(:, 1) == 23)));
+        multTimes_for(t, powof2+1) = sum(execLines(logical((execLines(:, 1) >= 26).*(execLines <= 28))));
+    end
+end
+
+multTimes_vec = mean(multTimes_vec);
+multTimes_for = mean(multTimes_for);
+
