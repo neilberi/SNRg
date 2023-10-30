@@ -12,7 +12,7 @@ OutputFile = 2; % Choose 2 or 3 to agree with CalculateSNRg.m
 if (OutputFile == 2)
 
 % OutputFile2
-    for TSTrial = 1:5
+    for TSTrial = 1:10
         run CalculateSNRg.m
     end
 

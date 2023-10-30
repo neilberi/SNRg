@@ -18,13 +18,15 @@ OutputFile = 1;
 filename = 'SNRgTemplateComputationTimes.csv';
 fout = fopen(filename, 'a');
 
-Ntrials = 10;
+Ntrials = 1;
 
 fdotIn_vec = -5*10.^(-6:-5 );
 for it1 = 1:length(fdotIn_vec)
     fdotIn = fdotIn_vec(it1);
     if (fdotIn == -5.e-9)
         TobsIn_vec = [8, 12, 16, 20, 24, 28, 32, 36, 40];
+    elseif (fdotIn == -5.e-6)
+        TobsIn_vec = [32];
     else
         TobsIn_vec = [4, 16./3, 8, 12, 16, 20, 24, 28, 32];
     end

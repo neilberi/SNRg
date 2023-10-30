@@ -10,8 +10,7 @@ PlotConstFdot = 0;
 CrossTerms = 0;
 SaveParams = 0;
 
-hnoise = 12; %1/sqrt(Hz)
-hamp = 1;
+
 
 %% Fit f Template Spacings
 
@@ -387,12 +386,12 @@ for j = 1:length(fdotvec_sig)
     Tcoh_hr = Tcoh/3600.;
     for k = 1:length(Tobsvecs{j})
         if (ParsevalSNR == 1)
-            filenameIn = sprintf('SNRgfdot_%0.es-2Tobs_%0.fhrnoiseamp_%.2esqrt(s)sigamp_%.2eP.csv', fdot_sig, Tobsvecs{j}(k), hnoise, hamp);
+            filename1 = sprintf('SNRgfdot_%0.es-2Tobs_%0.fhrnoiseamp_%.2esqrt(s)sigamp_%.2eP.csv', fdot_sig, Tobs_hr, hnoise, hamp);
         else
-            filenameIn = sprintf('SNRgfdot_%0.es-2Tobs_%0.fhrnoiseamp_%.2esqrt(s)sigamp_%.2e.csv', fdot_sig, Tobsvecs{j}(k), hnoise, hamp);
+            filename1 = sprintf('SNRgfdot_%0.es-2Tobs_%0.fhrnoiseamp_%.2esqrt(s)sigamp_%.2e.csv', fdot_sig, Tobs_hr, hnoise, hamp);
         end
         Data = readmatrix(filenameIn);
-        assert(height(Data)==Ntrials, ['Error: Incorrect number of trials for Tobs = ', num2str(Tobsvecs{j}(k)), ' hr, fdot = ', fdot_sig, ' Hz/s']);
+        assert(height(Data)==Ntrials, ['Error: Incorrect number of trials for Tobs = ', num2str(Tobsvecs{j}(k)), ' hr\n']);
         for i = 1:Nsegvecs{j}(k)
             X = [X; log10(abs(fdot_sig)), log10(Tobsvecs{j}(k)), log10(i)];
             Y = [Y; log10(mean(Data(:, i)))];
