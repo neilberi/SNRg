@@ -91,18 +91,13 @@ hold off;
 N_Tmat_max = count_templates_max(imat, Tobsmat, f1, f2, fdot1, fdot2, params);
 
 figure;
-if (LogPlot == 1)
-    sf3 = surf(Tobsmat, imat, log10(N_Tmat_max), 'EdgeAlpha', 0);
-    zlabel('Base 10 log of Template Count');
-else
-    sf3 = surf(Tobsmat, imat, N_Tmat_max, 'EdgeAlpha', 0);
-    zlabel('Template Count');
-end
-xlabel('Tobs (hr)');
-ylabel('i_{max}');
-title(sprintf('Template Counts for f on [%1.f, %1.f] Hz and fdot on [%1.e, %1.e] Hz/s \nusing maximum i up to imax for each subrange of fdot', f1, f2, fdot1, fdot2));
+sf3 = surf(Tobsmat, imat, N_Tmat_max, 'EdgeAlpha', 0);
+zlabel('Template Count $\tilde{N}_T$', 'Interpreter', 'LaTex');
+xlabel('$T_{obs}$ (hr)', 'Interpreter', 'LaTex');
+ylabel('$g_{max}$', 'Interpreter', 'LaTex');
+title(sprintf('Template Counts for %s on [%1.f, %1.f] Hz and %s on [%1.e, %1.e] Hz/s \nusing maximum %s up to %s', '$f_0$', f1, f2, '$\dot{f}$', fdot1, fdot2, '$g$', '$g_{max}$'), 'Interpreter', 'LaTex');
 ax = gca;
-ax.FontSize = 15;
+ax.FontSize = 20;
 ax.LineWidth = 3;
 grid on;
 hold off;

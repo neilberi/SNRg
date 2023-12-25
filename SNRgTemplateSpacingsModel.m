@@ -5,12 +5,13 @@ clc;
 close all;
 
 ParsevalSNR = 1;
+ExtraSigma = 1;
 PlotChiSqrContributions = 0;
 PlotConstFdot = 0;
 CrossTerms = 0;
 SaveParams = 0;
 
-hnoise = 12; %1/sqrt(Hz)
+hnoise = 12; 
 hamp = 1;
 
 %% Fit f Template Spacings
@@ -55,11 +56,13 @@ plane_fitParams = zeros(length(fdotvec_sig), 3);
 for j = 1:length(fdotvec_sig)
     dataIndices = logical(X(:, 1) == log10(abs(fdotvec_sig(j))));
     plane_fitParams(j, :) = nlinfit(X(dataIndices, 2:3), Y(dataIndices), plane_model, -2*rand(1, 3));
-    for k = 1:length(Tobsvecs{j})
-        for i = 1:Nsegvecs{j}(k)
-            dataIndex = logical(dataIndices .* (X(:, 3) == log10(i)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
-            sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), i])));
-            dY(dataIndex) = sqrt(dY(dataIndex)^2 + sysSigma^2);
+    if (ExtraSigma == 1)
+        for k = 1:length(Tobsvecs{j})
+            for i = 1:Nsegvecs{j}(k)
+                dataIndex = logical(dataIndices .* (X(:, 3) == log10(i)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
+                sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), i])));
+                dY(dataIndex) = sqrt(dY(dataIndex)^2 + (sysSigma/2)^2);
+            end
         end
     end
 end
@@ -129,8 +132,8 @@ figure;
 hold on;
 for k = 1:length(fdotvec_sig)
     modelmats{k} = model_func2(fitParams_fTS, log10(abs(fdotvec_sig(k))), Tobsmat, imat);
-    s2000{k} = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*');
-    sf2000{k} = surf(Tobsmat, imat, modelmats{k});
+    s2000{k} = scatter3(10.^X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), 10.^X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), 10.^Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*');
+    sf2000{k} = surf(10.^Tobsmat, 10.^imat, 10.^modelmats{k});
     s2000{k}.MarkerEdgeColor = rainbows{k};
     sf2000{k}.EdgeAlpha = 0.125;
     sf2000{k}.FaceAlpha = 0.25;
@@ -138,18 +141,22 @@ for k = 1:length(fdotvec_sig)
     s2000{k}.LineWidth = 3;
     sf2000{k}.EdgeAlpha = 0.5;
     sf2000{k}.EdgeColor = rainbowsf{k};
-    legends{k} = sprintf('fdot = %0.e Hz/s', fdotvec_sig(k));
+    legends{k} = sprintf('%s = %0.e Hz/s', '$\dot{f}$', fdotvec_sig(k));
 end
-legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends);
-title('f Template Spacings Data (points) vs Model (surfaces)');
-xlabel('log(Tobs) (log(hr))');
-ylabel('log(i)');
-zlabel('log(df) (log(Hz))');
+legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends, 'Interpreter', 'LaTex', 'Location', 'eastoutside');
+title('$TS_{f_0}$ Data (points) vs Model (surfaces)', 'Interpreter', 'LaTex');
+xlabel('$T_{obs}$ (hr)', 'Interpreter', 'LaTex');
+ylabel('$g$', 'Interpreter', 'LaTex');
+zlabel('$TS_{f_0}$ (Hz)', 'Interpreter', 'LaTex');
 grid on;
 hold off;
 ax = gca;
 ax.LineWidth = 3;
-ax.FontSize = 16;
+ax.FontSize = 20;
+ax.XScale = 'log';
+ax.YScale = 'log';
+ax.ZScale = 'log';
+
 view(45, 30);
 
 % Calculate chi^2 contributions
@@ -191,8 +198,8 @@ if (CrossTerms == 1)
 else 
     fprintf('log(TS_f) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_fTS(1), dParams_fTS(1).d);
     fprintf('\t(%f +/- %f)log(i) +\n', fitParams_fTS(2), dParams_fTS(2).d);
-    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_fTS(3), dParams_fTS(3).d);
-    fprintf('\t(%f +/- %f) +\n', fitParams_fTS(4), dParams_fTS(4).d);
+    fprintf('\t(%f +/- %f)log(|fdot|) +\n', fitParams_fTS(3), dParams_fTS(3).d);
+    fprintf('\t(%f +/- %f)\n', fitParams_fTS(4), dParams_fTS(4).d);
 end
 fprintf('Chi^2 = %f\n', gof_fTS.chi2);
 fprintf('Chi^2/dof = %f\n\n', gof_fTS.chi2/gof_fTS.dof);
@@ -233,11 +240,13 @@ plane_fitParams = zeros(length(fdotvec_sig), 3);
 for j = 1:length(fdotvec_sig)
     dataIndices = logical(X(:, 1) == log10(abs(fdotvec_sig(j))));
     plane_fitParams(j, :) = nlinfit(X(dataIndices, 2:3), Y(dataIndices), plane_model, -2*rand(1, 3));
-    for k = 1:length(Tobsvecs{j})
-        for i = 1:Nsegvecs{j}(k)
-            dataIndex = logical(dataIndices .* (X(:, 3) == log10(i)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
-            sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), i])));
-            dY(dataIndex) = sqrt(dY(dataIndex)^2 + sysSigma^2);
+    if (ExtraSigma == 1)
+        for k = 1:length(Tobsvecs{j})
+            for i = 1:Nsegvecs{j}(k)
+                dataIndex = logical(dataIndices .* (X(:, 3) == log10(i)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
+                sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), i])));
+                dY(dataIndex) = sqrt(dY(dataIndex)^2 + (sysSigma/2)^2);
+            end
         end
     end
 end
@@ -305,8 +314,8 @@ figure;
 hold on;
 for k = 1:length(fdotvec_sig)
     modelmats{k} = model_func2(fitParams_fdotTS, log10(abs(fdotvec_sig(k))), Tobsmat, imat);
-    s2000{k} = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*');
-    sf2000{k} = surf(Tobsmat, imat, modelmats{k});
+    s2000{k} = scatter3(10.^X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), 10.^X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), 10.^Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*');
+    sf2000{k} = surf(10.^Tobsmat, 10.^imat, 10.^modelmats{k});
     s2000{k}.MarkerEdgeColor = rainbows{k};
     sf2000{k}.EdgeAlpha = 0.125;
     sf2000{k}.FaceAlpha = 0.25;
@@ -314,18 +323,21 @@ for k = 1:length(fdotvec_sig)
     s2000{k}.LineWidth = 3;
     sf2000{k}.EdgeAlpha = 0.5;
     sf2000{k}.EdgeColor = rainbowsf{k};
-    legends{k} = sprintf('fdot = %0.e Hz/s', fdotvec_sig(k));
+    legends{k} = sprintf('%s = %0.e Hz/s', '$\dot{f}$', fdotvec_sig(k));
 end
-legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends);
-title('fdot Template Spacings Data (points) vs Model (surfaces)');
-xlabel('log(Tobs) (log(hr))');
-ylabel('log(i)');
-zlabel('log(dfdot) (log(Hz/s))');
+legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends, 'Interpreter', 'LaTex', 'Location', 'eastoutside');
+title('$TS_{\dot{f}}$ Data (points) vs Model (surfaces)', 'Interpreter', 'LaTex');
+xlabel('$T_{obs}$ (hr)', 'Interpreter', 'LaTex');
+ylabel('$g$', 'Interpreter', 'LaTex');
+zlabel('$TS_{\dot{f}}$ (Hz/s)', 'Interpreter', 'LaTex');
 grid on;
 hold off;
 ax = gca;
 ax.LineWidth = 3;
-ax.FontSize = 16;
+ax.FontSize = 20;
+ax.XScale = 'log';
+ax.YScale = 'log';
+ax.ZScale = 'log';
 view(45, 30);
 
 % Calculate chi^2 contributions
@@ -367,8 +379,8 @@ if (CrossTerms == 1)
 else 
     fprintf('log(TS_fdot) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_fdotTS(1), dParams_fdotTS(1).d);
     fprintf('\t(%f +/- %f)log(i) +\n', fitParams_fdotTS(2), dParams_fdotTS(2).d);
-    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_fdotTS(3), dParams_fdotTS(3).d);
-    fprintf('\t(%f +/- %f) +\n', fitParams_fdotTS(4), dParams_fdotTS(4).d);
+    fprintf('\t(%f +/- %f)log(|fdot|) +\n', fitParams_fdotTS(3), dParams_fdotTS(3).d);
+    fprintf('\t(%f +/- %f)\n', fitParams_fdotTS(4), dParams_fdotTS(4).d);
 end
 fprintf('Chi^2 = %f\n', gof_fdotTS.chi2);
 fprintf('Chi^2/dof = %f\n\n', gof_fdotTS.chi2/gof_fdotTS.dof);
@@ -407,11 +419,13 @@ plane_fitParams = zeros(length(fdotvec_sig), 3);
 for j = 1:length(fdotvec_sig)
     dataIndices = logical(X(:, 1) == log10(abs(fdotvec_sig(j))));
     plane_fitParams(j, :) = nlinfit(X(dataIndices, 2:3), Y(dataIndices), plane_model, -2*rand(1, 3));
-    for k = 1:length(Tobsvecs{j})
-        for i = 1:Nsegvecs{j}(k)
-            dataIndex = logical(dataIndices .* (X(:, 3) == log10(i)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
-            sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), i])));
-            dY(dataIndex) = sqrt(dY(dataIndex)^2 + sysSigma^2);
+    if (ExtraSigma == 1)
+        for k = 1:length(Tobsvecs{j})
+            for i = 1:Nsegvecs{j}(k)
+                dataIndex = logical(dataIndices .* (X(:, 3) == log10(i)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
+                sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), i])));
+                dY(dataIndex) = sqrt(dY(dataIndex)^2 + (sysSigma/2)^2);
+            end
         end
     end
 end
@@ -479,8 +493,8 @@ figure;
 hold on;
 for k = 1:length(fdotvec_sig)
     modelmats{k} = model_func2(fitParams_SNR, log10(abs(fdotvec_sig(k))), Tobsmat, imat);
-    s2000{k} = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*');
-    sf2000{k} = surf(Tobsmat, imat, modelmats{k});
+    s2000{k} = scatter3(10.^X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), 10.^X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), 10.^Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*');
+    sf2000{k} = surf(10.^Tobsmat, 10.^imat, 10.^modelmats{k});
     s2000{k}.MarkerEdgeColor = rainbows{k};
     sf2000{k}.EdgeAlpha = 0.125;
     sf2000{k}.FaceAlpha = 0.25;
@@ -488,18 +502,21 @@ for k = 1:length(fdotvec_sig)
     s2000{k}.LineWidth = 3;
     sf2000{k}.EdgeAlpha = 0.5;
     sf2000{k}.EdgeColor = rainbowsf{k};
-    legends{k} = sprintf('fdot = %0.e Hz/s', fdotvec_sig(k));
+    legends{k} = sprintf('%s = %0.e Hz/s', '$\dot{f}$', fdotvec_sig(k));
 end
-legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends);
-title('SNRg_i Data (points) vs Model (surfaces)');
-xlabel('log(Tobs) (log(hr))');
-ylabel('log(i)');
-zlabel('log(dfdot) (log(Hz/s))');
+legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends, 'Interpreter', 'LaTex', 'Location', 'eastoutside');
+title('SNR$_g$ Data (points) vs Model (surfaces)', 'Interpreter', 'LaTex');
+xlabel('$T_{obs}$ (hr)', 'Interpreter', 'LaTex');
+ylabel('$g$', 'Interpreter', 'LaTex');
+zlabel('SNR$_g$', 'Interpreter', 'LaTex');
 grid on;
 hold off;
 ax = gca;
 ax.LineWidth = 3;
-ax.FontSize = 16;
+ax.FontSize = 20;
+ax.XScale = 'log';
+ax.YScale = 'log';
+ax.ZScale = 'log';
 view(45, 30);
 
 % Calculate chi^2 contributions
@@ -541,8 +558,8 @@ if (CrossTerms == 1)
 else 
     fprintf('log(SNRg_i) =\n\t(%f +/- %f)log(Tobs) +\n', fitParams_SNR(1), dParams_SNR(1).d);
     fprintf('\t(%f +/- %f)log(i) +\n', fitParams_SNR(2), dParams_SNR(2).d);
-    fprintf('\t(%f +/- %f)log(|fdot|)\n', fitParams_SNR(3), dParams_SNR(3).d);
-    fprintf('\t(%f +/- %f) +\n', fitParams_SNR(4), dParams_SNR(4).d);
+    fprintf('\t(%f +/- %f)log(|fdot|) +\n', fitParams_SNR(3), dParams_SNR(3).d);
+    fprintf('\t(%f +/- %f)\n', fitParams_SNR(4), dParams_SNR(4).d);
 end
 fprintf('Chi^2 = %f\n', gof_SNR.chi2);
 fprintf('Chi^2/dof = %f\n\n', gof_SNR.chi2/gof_SNR.dof);

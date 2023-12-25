@@ -1,4 +1,4 @@
-2% SNRg Calculations
+% SNRg Calculations
 
 clear;
 clc;
@@ -6,13 +6,12 @@ close all;
 
 % Choose settings (0 = off, 1 = on)
 ParsevalSNR = 1; 
-OldWeight = 0;
 Animation = 0;
-NequalNseg = 1;
-PlotSNRvsParam = 0;
+NequalNseg = 0;
+PlotSNRvsParam = 1;
 PlotLastTimeSegment = 0;
 PlotTSvsi_log = 0;
-OutputFile1 = 1;
+OutputFile1 = 0;
 OutputFile2 = 0;
 OutputFile3 = 0;
 OutputFile4 = 0;
@@ -27,8 +26,8 @@ TS = 'fdot'; % Choose 'f' or 'fdot'
 %% Generate Data Spectrogram
 
 % {SNRg_i | M<=i<=N} will be calculated
-M = 1;
-N = 100;
+M = 5;
+N = 5;
 Ntrial = 10;
 if (OutputFile1 == 0 && OutputFile4 == 0)
     Ntrial = 1;
@@ -53,10 +52,10 @@ hamp = 1;
 f_sig = 10.;
 
 % Signal frequency derivative (Hz/s)
-fdot_sig = -5.e-5;
+fdot_sig = -5.e-7;
 
 % Length of observation (hr)
-Tobs_hr = 4.;
+Tobs_hr = 8.;
 Tobs = Tobs_hr * 3600.;
 
 % Coherence time (hr) - choose so that signal drifts 0.5 bin per coherence time
@@ -131,8 +130,8 @@ Nsample = length(t);
 bandscale = 115; % Increase if fIndex is too high/low
 f_siglo = min(f_sig,f_sig+fdot_sig*Tobs);
 f_sighi = max(f_sig,f_sig+fdot_sig*Tobs);
-freqlo_approx = min(fvec)+min(fdotvec)*Tobs - (noiseOffset + nNoiseSample + nBinSide)/Tcoh - bandscale/Tcoh;
-freqhi_approx = max(fvec) + max(fdotvec)*Tobs*(max(fdotvec) > 0) + (noiseOffset + nNoiseSample + nBinSide)/Tcoh + bandscale/Tcoh;
+freqlo_approx = min(fvec)+min(fdotvec)*Tobs - (noiseOffset + nNoiseSample*(2*nBinSide+1))/Tcoh - bandscale/Tcoh;
+freqhi_approx = max(fvec) + max(fdotvec)*Tobs*(max(fdotvec) > 0) + (noiseOffset + nNoiseSample*(2*nBinSide+1))/Tcoh + bandscale/Tcoh;
 freqhi = ceil(freqhi_approx * Tcoh)/Tcoh;
 freqlo = floor(freqlo_approx * Tcoh)/Tcoh;
 bandwidth = freqhi - freqlo;
@@ -195,12 +194,12 @@ for trial = 1:Ntrial
         fprintf('Creating spectrogram plot with %d time bins (columns) and %d frequency bins (rows)...\n',Nseg,nbandbin);
         s1 = surf(seghour,freqplot,plotSpectrogram);
         s1.EdgeAlpha = 0.5;
-        title('Raw spectrogram');
-        xlabel('Time (hours)');
-        ylabel('Frequency (Hz)');
+        title('Spectrogram', 'Interpreter', 'LaTex');
+        xlabel('Time (hr)', 'Interpreter', 'LaTex');
+        ylabel('Frequency (Hz)', 'Interpreter', 'LaTex');
         view(0,90);
         ax = gca;
-        ax.FontSize = 18;
+        ax.FontSize = 20;
         ax.LineWidth = 3;
         axis([min(seghour) max(seghour) min(freqplot) max(freqplot)]);
     end
@@ -236,20 +235,11 @@ for trial = 1:Ntrial
     end
 
     % Calculate weightedFFTs array
-    if (OldWeight == 1)
-        weight = zeros(nbandbin, Nseg);
-    else
-        weight = zeros(1, Nseg);
-    end
+    weight = zeros(1, Nseg);
     weightedFFT = (1+sqrt(-1)).*zeros(nbandbin,Nseg);
     for tIndex = 1:Nseg
-        if (OldWeight == 1)
-            weight(:, tIndex) = abs(searchSpectrogram(:, tIndex)).^2/sum(abs(searchSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2);
-            weightedFFT(:, tIndex) = searchSpectrogram(:, tIndex).*weight(:, tIndex);
-        else
-            weight(tIndex) = 1/sqrt(sum(abs(searchSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2));
-            weightedFFT(:, tIndex) = weight(tIndex).*searchSpectrogram(:, tIndex);
-        end
+        weight(tIndex) = 1/sqrt(sum(abs(searchSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2));
+        weightedFFT(:, tIndex) = weight(tIndex).*searchSpectrogram(:, tIndex);
     end
     
     % Calculate detection statistics
@@ -324,18 +314,13 @@ for trial = 1:Ntrial
     %% Calculate SNRs and Plot
     % Calculate SNRs
     SNRg_i = zeros(N-M+1, 1);
-    if (OldWeight == 1)
-        noiseMeanDS = noise_mean_DS(weight, searchSpectrogram, noiseMeanPower, Nseg, fIndex, nBinSide);
-        noiseStdDS = noise_std_DS(weight, searchSpectrogram, noiseMeanPower, Nseg, fIndex, nBinSide);
-    else
-        noiseMeanDS = noiseMeanPower*Nseg;
-        noiseStdDS = noiseMeanPower*sqrt(Nseg);
-    end
+    noiseMeanDS = noise_mean_DS(noiseMeanPower, M, N, Nseg);
+    noiseStdDS = noise_std_DS(noiseMeanPower, M, N, Nseg);
     for i = M:N
         if (ParsevalSNR == 0)
             SNRg_i(i-M+1) = abs(signalDSg_i(i-M+1) - mean(noiseDSg_i(i-M+1, :)))/std(noiseDSg_i(i-M+1, :));
         elseif (ParsevalSNR == 1)
-            SNRg_i(i-M+1) = abs(signalDSg_i(i-M+1) - noiseMeanDS)/(sqrt(i)*noiseStdDS);
+            SNRg_i(i-M+1) = abs(signalDSg_i(i-M+1) - noiseMeanDS(i-M+1))/noiseStdDS(i-M+1);
         end
 
         fprintf('SNRg_%d = %e\n', i, SNRg_i(i-M+1));
@@ -374,11 +359,7 @@ for trial = 1:Ntrial
 
 end
 
-if (OldWeight == 1)
-    predSignalDS = pred_signal_DS(weight, searchSpectrogram, noiseMeanPower, Nseg, fIndex, nBinSide);
-else
-    predSignalDS = Nseg*h0rms(searchSpectrogram, fIndex, Nseg, nBinSide)^2 + noiseMeanDS;
-end
+predSignalDS = pred_signal_DS(h0rms(searchSpectrogram, fIndex, Nseg, nBinSide), noiseMeanPower, M, N, Nseg);
 iVals = M:N;
 perfiVals = iVals(Nseg./iVals == floor(Nseg./iVals));
 finei = linspace(M, N, 100*Nseg);
@@ -387,21 +368,22 @@ finei = linspace(M, N, 100*Nseg);
 figure(2)
 p1 = scatter(M:N, SNRg_i, 'ok');
 hold on;
-p3 = scatter(perfiVals, abs(predSignalDS - noiseMeanDS)./noiseStdDS.*perfiVals./sqrt(perfiVals), 200, 'p');
-p4 = plot(finei, abs(predSignalDS - noiseMeanDS)./noiseStdDS.*finei./sqrt(finei));
+p3 = scatter(perfiVals, abs(predSignalDS(perfiVals-M+1) - noiseMeanPower*Nseg)./noiseMeanPower./sqrt(Nseg.*perfiVals), 200, 'p');
+p4 = plot(finei, sqrt(finei).*abs(predSignalDS(1)-noiseMeanPower*Nseg)./noiseMeanPower./sqrt(Nseg), '--');
+p5 = plot(iVals, abs(predSignalDS - noiseMeanDS)./noiseStdDS, '-r');
 p3.LineWidth = 3;
 p3.CData = 0.8*[204, 204, 255]/255;
 p4.Color = p3.CData;
-p4.LineWidth = 3;
-title('SNRg_i vs i');
-xlabel('i');
-ylabel('SNRg_i');
-legend('SNRg_i', 'Predicted Values', 'location', 'northwest');
+p5.LineWidth = 2;
+title('SNR$_g$ vs $g$', 'Interpreter', 'LaTex');
+xlabel('$g$', 'Interpreter', 'LaTex');
+ylabel('SNR$_g$', 'Interpreter', 'LaTex');
+legend('SNR$_g$', 'Predicted $g^*$', '', 'Predicted', 'location', 'northwest', 'Interpreter', 'LaTex');
 grid on;
 p1.LineWidth = 3;
 ax = gca;
 ax.LineWidth = 3;
-ax.FontSize = 16;
+ax.FontSize = 22;
 hold off;
 
 [imax, SNRg_imax] = max(SNRg_i);
@@ -412,18 +394,17 @@ fprintf('Max of %e at i = %d\n', imax, SNRg_imax);
 if (M == 1)
 fprintf('\n\t\t***\n');
 fprintf('Signal DS_1 (empirical) = %e\n', signalDSg_i(1));
-fprintf('Signal DS_1 (predicted) = %e\n', predSignalDS);
+fprintf('Signal DS_1 (predicted) = %e\n', predSignalDS(1));
 fprintf('Mean of Noise DS_1 (empirical) %e\n', mean(noiseDSg_i(1, :)));
-fprintf('Mean of Noise DS_1 (predicted) %e\n', noiseMeanDS);
+fprintf('Mean of Noise DS_1 (predicted) %e\n', noiseMeanDS(i));
 fprintf('Standard Deviation of Noise DS_1 (empirical) = %e\n', std(noiseDSg_i(1, :)));
-fprintf('Standard Deviation of Noise DS_1 (predicted) = %e\n', noiseStdDS);
+fprintf('Standard Deviation of Noise DS_1 (predicted) = %e\n', noiseStdDS(1));
 fprintf('SNRg_1 (empirical) = %e\n', abs(signalDSg_i(1)-mean(noiseDSg_i(1, :)))/std(noiseDSg_i(1, :)));
-fprintf('SNRg_1 (predicted) = %e\n', abs(predSignalDS - noiseMeanDS)/noiseStdDS);
+fprintf('SNRg_1 (predicted) = %e\n', abs(predSignalDS(1) - noiseMeanDS(1))/noiseStdDS(1));
 fprintf('\t\t***\n\n')
 end
 
 %% Plot DS Contributions
-
 if (NequalNseg == 1 && M == 1 && Nseg >= 4)
     % Create segment vectors for each SNRg_i
     segvecs = {[], [], [], []};
@@ -531,23 +512,15 @@ for r = 1:length(fvec)
         if (ParsevalSNR == 0)
             fIndex_noise = zeros(nNoiseSample, Nseg);
             for k = 1:nNoiseSample
-                fIndex_noise(k, :) = fIndex + 10*k + noiseOffset;
+                fIndex_noise(k, :) = fIndex + (2*nBinSide+2)*k + noiseOffset;
             end
         end
     
         % Calculate weightedFFTs array
-        if (OldWeight == 1)
-            weight = zeros(nbandbin, Nseg);
-        else
-            weight = zeros(1, Nseg);
-        end
+        weight = zeros(1, Nseg);
         weightedFFT = (1+sqrt(-1)).*zeros(nbandbin,Nseg);
         for tIndex = 1:Nseg
-            if (OldWeight == 1)
-                weight(:, tIndex) = abs(searchSpectrogram(:, tIndex)).^2/sum(abs(searchSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2);
-            else
-                weight(tIndex) = 1/sqrt(sum(abs(searchSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2));
-            end
+            weight(tIndex) = 1/sqrt(sum(abs(searchSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2));
             weightedFFT(:, tIndex) = searchSpectrogram(:, tIndex).*weight(:, tIndex);
         end
         
@@ -609,18 +582,11 @@ for r = 1:length(fvec)
         end
         
         
-        if (OldWeight == 1)
-            noiseMeanDS = noise_mean_DS(weight, searchSpectrogram, noiseMeanPower, Nseg, fIndex, nBinSide);
-            noiseStdDS = noise_std_DS(weight, searchSpectrogram, noiseMeanPower, Nseg, fIndex, nBinSide);
-        else
-            noiseMeanDS = noiseMeanPower*Nseg;
-            noiseStdDS = noiseMeanPower*sqrt(Nseg);
-        end
         for i = M:N
             if (ParsevalSNR == 0)
                 SNRg_iArray(i-M+1, j*r) = abs(signalDSg_i(i-M+1) - mean(noiseDSg_i(i-M+1, :)))/std(noiseDSg_i(i-M+1, :));
             elseif (ParsevalSNR == 1)
-                SNRg_iArray(i-M+1, j*r) = abs(signalDSg_i(i-M+1) - noiseMeanDS)/(sqrt(i)*noiseStdDS);
+                SNRg_iArray(i-M+1, j*r) = abs(signalDSg_i(i-M+1) - noiseMeanDS(i-M+1))/noiseStdDS(i-M+1);
             end
         end
         
@@ -688,9 +654,9 @@ end
 titleStrings = cell(1, N-M+1);
 for i = M:N
     if (strcmp(TS, 'f'))
-        titleStrings{i-M+1} = sprintf('SNRg_{%d} vs df', i);
+        titleStrings{i-M+1} = sprintf('SNR%s vs %s', '$_g$', '$\Delta f_0$');
     else
-        titleStrings{i-M+1} = sprintf('SNRg_{%d} vs dfdot', i);
+        titleStrings{i-M+1} = sprintf('SNR%s vs %s', '$_g$', '$\Delta \dot{f}$');
     end
 end
 df = fvec-f_sig;
@@ -714,6 +680,7 @@ for k = 1:(length(dfdot)*length(df))
 end
 
 % Plot SNRg_i vs dfdot
+%{
 if (PlotSNRvsParam == 1)
     for i = M:N
         figure(3+length(dfdot)*length(df)+i-M+1)
@@ -721,36 +688,35 @@ if (PlotSNRvsParam == 1)
         hold on;        
         if (strcmp(TS, 'f'))
             si1 = scatter(df, SNRg_iArray(i-M+1, :)/SNRg_iArray(i-M+1, searchScale+1), 'ok');
-            xlabel('df (Hz)');
+            xlabel('$\Delta f_0$ (Hz)', 'Interpreter', 'LaTex');
         else
             si1 = scatter(dfdot, SNRg_iArray(i-M+1, :)/SNRg_iArray(i-M+1, searchScale+1), 'ok');
-            xlabel('dfdot (Hz/s)');
+            xlabel('$\Delta \dot{f}$ (Hz/s)', 'Interpreter', 'LaTex');
         end
-        title(titleStrings{i-M+1});
+        title(titleStrings{i-M+1}, 'Interpreter', 'LaTex');
         ylabel('SNR/SNR_m_a_x');
-        legend(['i = ', num2str(i)])
         grid on;
         ax = gca;
         ax.LineWidth = 3;
-        ax.FontSize = 16;
+        ax.FontSize = 20;
 
         subplot(1, 2, 2)
         if (strcmp(TS, 'f'))
             si2 = scatter(df, SNRg_iArray(i-M+1, :), 'ok');
-            xlabel('df (Hz)');
+            xlabel('$\Delta f_0$ (Hz)', 'Interpreter', 'LaTex');
         else
             si2 = scatter(dfdot, SNRg_iArray(i-M+1, :), 'ok');
-            xlabel('dfdot (Hz/s)');
+            xlabel('$\Delta \dot{f}$ (Hz/s)', 'Interpreter', 'LaTex');
         end
-        title(titleStrings{i-M+1});
+        title(titleStrings{i-M+1}, 'Interpreter', 'LaTex');
         ylabel('SNR');
-        legend(['i = ', num2str(i)])
         grid on;
         ax = gca;
         ax.LineWidth = 3;
-        ax.FontSize = 16;
+        ax.FontSize = 20;
     end
 end
+%}
 
 %% Animation
 if (Animation == 1)
@@ -781,9 +747,15 @@ if (Animation == 1)
             grid on;
 
             subplot(1, 2, 2)
-            scatter(dfdot, SNRg_iArray(i-M+1, :), 'ok');
-            axis([1.01*min(dfdot), 1.01*max(dfdot), 0, max(SNRg_iArray(:))]);
-            xlabel('dfdot (Hz/s)');
+            if (strcmp(TS, 'fdot'))
+                scatter(dfdot, SNRg_iArray(i-M+1, :), 'ok');
+                axis([1.01*min(dfdot), 1.01*max(dfdot), 0, max(SNRg_iArray(:))]);
+                xlabel('dfdot (Hz/s)');
+            else
+                scatter(df, SNRg_iArray(i-M+1, :), 'ok');
+                axis([1.01*min(df), 1.01*max(df), 0, max(SNRg_iArray(:))]);
+                xlabel('df (Hz)');
+            end
             ylabel('SNR');
             legend(['i = ', num2str(i)]);
             title('Not Normalized');
@@ -827,14 +799,44 @@ for i = M:N
     if (PlotSNRvsParam == 1)
         figure(3+length(dfdot)*length(df)+i-M+1)
         subplot(1, 2, 1)
+        hold on;        
+        if (strcmp(TS, 'f'))
+            si1 = scatter(df, SNRg_iArray(i-M+1, :)/SNRg_iArray(i-M+1, searchScale+1), 'ok');
+            xlabel('$\Delta f_0$ (Hz)', 'Interpreter', 'LaTex');
+        else
+            si1 = scatter(dfdot, SNRg_iArray(i-M+1, :)/SNRg_iArray(i-M+1, searchScale+1), 'ok');
+            xlabel('$\Delta \dot{f}$ (Hz/s)', 'Interpreter', 'LaTex');
+        end
+        title(titleStrings{i-M+1}, 'Interpreter', 'LaTex');
+        ylabel('SNR/SNR$_{max}$', 'Interpreter', 'LaTex');
+        grid on;
+        ax = gca;
+        ax.LineWidth = 3;
+        ax.FontSize = 20;
+
+        subplot(1, 2, 2)
+        if (strcmp(TS, 'f'))
+            si2 = scatter(df, SNRg_iArray(i-M+1, :), 'ok');
+            xlabel('$\Delta f_0$ (Hz)', 'Interpreter', 'LaTex');
+        else
+            si2 = scatter(dfdot, SNRg_iArray(i-M+1, :), 'ok');
+            xlabel('$\Delta \dot{f}$ (Hz/s)', 'Interpreter', 'LaTex');
+        end
+        title(titleStrings{i-M+1}, 'Interpreter', 'LaTex');
+        ylabel('SNR', 'Interpreter', 'LaTex');
+        grid on;
+        ax = gca;
+        ax.LineWidth = 3;
+        ax.FontSize = 20;
+
+        subplot(1, 2, 1)
         hold on;
         if (strcmp(TS, 'f'))
             pi1 = plot(dfp, SNRsplines(i-M+1, :)/SNRg_iArray(i-M+1, searchScale+1));
         else
             pi1 = plot(dfdotp, SNRsplines(i-M+1, :)/SNRg_iArray(i-M+1, searchScale+1));
         end
-        legend(['i = ', num2str(i)], 'spline', 'Location', 'south')
-
+        legend(['$g$ = ', num2str(i)], 'spline', 'Location', 'south', 'Interpreter', 'LaTex');
         subplot(1, 2, 2)
         hold on;
         if (strcmp(TS, 'f'))
@@ -843,7 +845,7 @@ for i = M:N
         else
             pi2 = plot(dfdotp, SNRsplines(i-M+1, :));
         end
-        legend(['i = ', num2str(i)], 'spline', 'Location', 'south')
+        legend(['$g$ = ', num2str(i)], 'spline', 'Location', 'south', 'Interpreter', 'LaTex');
     end
 end
 
@@ -872,7 +874,9 @@ end
 figure(1000000)
 s1000000 = scatter(log10(M:N), log10(templateSpacings));
 hold on;
-p1000000 = plot(log10(M:N), log10(X),  '-r');
+if(length(M:N) == length(X))
+    p1000000 = plot(log10(M:N), log10(X),  '-r');
+end
 s1000000.MarkerFaceColor = 'k';
 title('Template Spacing vs i');
 xlabel('log(i)');
@@ -881,7 +885,10 @@ if (strcmp(TS, 'f'))
 else
     ylabel('log(dfdot) (log(Hz/s))');
 end
-legend('Calculated Now', 'Previously Calculated')
+if(length(M:N) == length(X))
+    legend('Calculated Now', 'Previously Calculated')
+end
+p1000000.LineWidth = 2.2;
 ax = gca;
 ax.FontSize = 16;
 ax.LineWidth = 3;
@@ -975,34 +982,6 @@ end
 
 %% Functions 
 
-% Calculate mean noise detection statistic from weights and signal spectrogram
-function [D_n] = noise_mean_DS(W, S, A, Nseg, fIndex, nBinSide)
-    D_n = 0;
-    for tIndex = 1:Nseg
-        D_n = D_n + sum(W((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex).^2 .* abs(S((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2);
-    end
-    D_n = A*D_n;
-end
-
-% Calculate standard deviation of noise detection statistic from weights and signal spectrogram
-function [sigma_n] = noise_std_DS(W, S, A, Nseg, fIndex, nBinSide)
-    var_n = 0;
-    for tIndex = 1:Nseg
-        var_n = var_n + sum(W((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex).^2 .* abs(S((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2)^2;
-    end
-    var_n = A^2*var_n;
-    sigma_n = sqrt(var_n);
-end
-
-% Calculate standard deviation of noise detection statistic from weights and signal spectrogram
-function [D_s] = pred_signal_DS(W, S, A, Nseg, fIndex, nBinSide)
-    D_s = 0;
-    for tIndex = 1:Nseg
-        D_s = D_s + sum(W((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex) .* abs(S((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex).^2))^2;
-    end
-    D_s = D_s + noise_mean_DS(W, S, A, Nseg, fIndex, nBinSide);
-end
-
 % Calculate root mean square h_0 for pure signal spectrogram
 function [h_0] = h0rms(S, fIndex, Nseg, nBinSide)
     h_0sqr = 0;
@@ -1010,4 +989,28 @@ function [h_0] = h0rms(S, fIndex, Nseg, nBinSide)
         h_0sqr = h_0sqr + sum(abs(S((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2);
     end
     h_0 = sqrt(h_0sqr/Nseg);
+end
+
+% Calculate excess segments
+function [ib] = ibar(i, Nseg)
+    ib = Nseg - floor(Nseg./i).*i;
+end
+
+% Calculate mean noise detection statistic from weights and signal spectrogram
+function [D_n] = noise_mean_DS(A, M, N, Nseg)
+    i = M:N;
+    D_n = (floor(Nseg./i) + ibar(i, Nseg)).*A;
+end
+
+% Calculate standard deviation of noise detection statistic from weights and signal spectrogram
+function [sigma_n] = noise_std_DS(A, M, N, Nseg)
+    i = M:N;
+    var_n = (floor(Nseg./i).*i.^2 + ibar(i, Nseg).^2).*A^2;
+    sigma_n = sqrt(var_n);
+end
+
+% Calculate standard deviation of noise detection statistic from weights and signal spectrogram
+function [D_s] = pred_signal_DS(h_0, A, M, N, Nseg)
+    i = M:N;
+    D_s = (floor(Nseg./i).*i.^2 + ibar(i, Nseg).^2).*h_0^2 + noise_mean_DS(A, M, N, Nseg);
 end

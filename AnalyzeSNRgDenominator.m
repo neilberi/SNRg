@@ -26,6 +26,7 @@ else
     filename4 = sprintf('SNRgDenominatorfdot_%0.es-2Tobs_%0.fhrnoiseamp_%.2esqrt(s)sigamp_%.2e.csv', fdot_sig, Tobs_hr, hnoise, hamp);
 end
 Data = readmatrix(filename4);
+Data = Data(1:50, :);
 Ntrials = height(Data);
 
 % Calculate and round Tcoh (s)
@@ -47,31 +48,66 @@ sigmadenoms = std(Data)/sqrt(Ntrials);
 
 % Calculate predicted values
 noiseMeanPower = Tcoh*fsamp*noiseamp^2;
-noiseStdDS = noiseMeanPower*sqrt(Nseg);
-finei = linspace(1, Nseg, 1000);
+noiseMeanDS = noise_mean_DS(noiseMeanPower, 1, Nseg, Nseg);
+noiseStdDS = noise_std_DS(noiseMeanPower, 1, Nseg, Nseg);
+ivec = 1:Nseg;
 iVals = 1:Nseg;
 perfiVals = iVals(Nseg./iVals == floor(Nseg./iVals));
-preddenoms = sqrt(finei).*noiseStdDS;
-perfpreddenoms = sqrt(perfiVals).*noiseStdDS;
+preddenoms = noiseStdDS;
+perfpreddenoms = sqrt(perfiVals).*noiseMeanPower*sqrt(Nseg);
 
 % Plot
 figure;
 hold on;
-s1 = scatter(perfiVals, perfpreddenoms, 80, 'p');
-p1 = plot(finei, preddenoms);
+s1 = scatter(perfiVals, perfpreddenoms, 100, 'p');
+p1 = plot(ivec, preddenoms, 'LineWidth', 3);
 s1.CData = 0.8*[204, 204, 255]/255;
 p1.Color = s1.CData;
 e1 = errorbar(iVals, denoms, sigmadenoms, sigmadenoms);
 e1.LineStyle = 'none';
 e1.LineWidth = 2;
-title('SNRg_i Denominators vs i');
-xlabel('i');
-ylabel('SNR Denominator');
-legend('Predicted (i divides N_{seg})', 'Predicted', 'Measured', 'Location', 'Northwest');
+title('SNR$_g$ Denominator vs $g$', 'Interpreter', 'LaTex');
+xlabel('$g$', 'Interpreter', 'LaTex');
+ylabel('SNR$_g$ Denominator', 'Interpreter', 'LaTex');
+legend('Predicted $g^*$', 'Predicted', 'Measured', 'Location', 'Northwest', 'Interpreter', 'LaTex');
 ax = gca;
 ax.LineWidth = 3;
-ax.FontSize = 16;
+ax.FontSize = 22;
 grid on;
 hold off;
 
 
+%% Functions
+
+% Calculate root mean square h_0 for pure signal spectrogram
+function [h_0] = h0rms(S, fIndex, Nseg, nBinSide)
+    h_0sqr = 0;
+    for tIndex = 1:Nseg
+        h_0sqr = h_0sqr + sum(abs(S((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).^2);
+    end
+    h_0 = sqrt(h_0sqr/Nseg);
+end
+
+% Calculate excess segments
+function [ib] = ibar(i, Nseg)
+    ib = Nseg - floor(Nseg./i).*i;
+end
+
+% Calculate mean noise detection statistic from weights and signal spectrogram
+function [D_n] = noise_mean_DS(A, M, N, Nseg)
+    i = M:N;
+    D_n = (floor(Nseg./i) + ibar(i, Nseg)).*A;
+end
+
+% Calculate standard deviation of noise detection statistic from weights and signal spectrogram
+function [sigma_n] = noise_std_DS(A, M, N, Nseg)
+    i = M:N;
+    var_n = (floor(Nseg./i).*i.^2 + ibar(i, Nseg).^2).*A^2;
+    sigma_n = sqrt(var_n);
+end
+
+% Calculate standard deviation of noise detection statistic from weights and signal spectrogram
+function [D_s] = pred_signal_DS(h_0, A, M, N, Nseg)
+    i = M:N;
+    D_s = (floor(Nseg./i).*i.^2 + ibar(i, Nseg).^2).*h_0^2 + noise_mean_DS(A, M, N, Nseg);
+end

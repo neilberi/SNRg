@@ -15,7 +15,6 @@ if (OutputFile == 2)
     for TSTrial = 1:10
         run CalculateSNRg.m
     end
-
 else
 
 % OutputFile3
