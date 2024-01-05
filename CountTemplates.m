@@ -23,13 +23,13 @@ fdot2 = -5.e-9;
 
 % Choose grouping number i and observation period (hr) for calculation of
 % single template count
-i = 6;
-Tobs_hr = 40;
+i = 100;
+Tobs_hr = 32;
 
 % Load parameters and calculate template count from analytically integated formula
 params = readmatrix('SNRgModelParams.csv');
 
-N_T = count_templates(i, Tobs_hr, f1, f2, fdot1, fdot2, params);
+N_T = count_templates_max(i, Tobs_hr, f1, f2, fdot1, fdot2, params);
 
 % Print template count
 fprintf('For searching the space %1.f Hz <= f<= %1.f Hz \nand %1.e Hz/s <= fdot <= %1.e Hz/s\n', f1, f2, fdot1, fdot2);
@@ -90,12 +90,14 @@ hold off;
 %% Calculate Template Counts for range of i and Tobs using greatest possible i for each fdot range up to imax
 N_Tmat_max = count_templates_max(imat, Tobsmat, f1, f2, fdot1, fdot2, params);
 
+%% Plot 
 figure;
 sf3 = surf(Tobsmat, imat, N_Tmat_max, 'EdgeAlpha', 0);
 zlabel('Template Count $\tilde{N}_T$', 'Interpreter', 'LaTex');
 xlabel('$T_{obs}$ (hr)', 'Interpreter', 'LaTex');
 ylabel('$g_{max}$', 'Interpreter', 'LaTex');
 title(sprintf('Template Counts for %s on [%1.f, %1.f] Hz and %s on [%1.e, %1.e] Hz/s \nusing maximum %s up to %s', '$f_0$', f1, f2, '$\dot{f}$', fdot1, fdot2, '$g$', '$g_{max}$'), 'Interpreter', 'LaTex');
+%colorbar;
 ax = gca;
 ax.FontSize = 20;
 ax.LineWidth = 3;
@@ -144,8 +146,8 @@ function N_T = count_templates_max_scalar(imax_in, Tobs_in, f1_in, f2_in, fdot1_
     if (is_valid_i_scalar(imax_in, Tobs_in, fdot2_in))
         N_T = count_templates(imax_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params);
     elseif (fdot_max < fdot1_in)
-        N_T = NaN;
-    else 
+        N_T = count_templates_max_scalar(imax_in-1, Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params);
+    else
         N_T = count_templates_max_scalar(imax_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot_max, params) + ... 
               count_templates_max_scalar(imax_in-1, Tobs_in, f1_in, f2_in, fdot_max, fdot2_in, params);
     end

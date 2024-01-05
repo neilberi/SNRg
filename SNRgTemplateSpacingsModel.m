@@ -566,14 +566,13 @@ fprintf('Chi^2/dof = %f\n\n', gof_SNR.chi2/gof_SNR.dof);
 
 %% Analyze Template Computation Times
 
-%{
 % Read in and configure data
 X = [];
 Y = [];
 dY = [];
 filenameIn = 'SNRgTemplateComputationTimes.csv';
 Data = readmatrix(filenameIn);
-for j = 1:(length(fdotvec_sig)-1)
+for j = 1:length(fdotvec_sig)
     fdot_sig = fdotvec_sig(j);
     Tcoh_hr = 1./3600.*sqrt(0.5/abs(fdot_sig));
     Tcoh = Tcoh_hr * 3600.;
@@ -581,16 +580,11 @@ for j = 1:(length(fdotvec_sig)-1)
     Tcoh_hr = Tcoh/3600.;
     for k = 1:length(Tobsvecs{j})
         for i = 1:Nsegvecs{j}(k)
-            dataIndices = logical((Data(:, 1) == Tobsvecs{j}(k)) .* (Data(:, 2) == i) .* (abs(Data(:, 3) - fdotvec_sig(j)) <= 1.e-16));
-            if (sum(dataIndices) > 0)
-                X = [X; log10(abs(fdot_sig)), log10(Tobsvecs{j}(k)), log10(i)];
-                Y = [Y; log10(mean(Data(dataIndices, 4)))];
-                if (sum(dataIndices) > 1)
-                    dY = [dY; std(Data(dataIndices, 4))/mean(Data(dataIndices, 4))/log(10)/sqrt(sum(dataIndices))];
-                else
-                    dY = [dY; 0.03/mean(Data(dataIndices, 4))/log(10)/sqrt(sum(dataIndices))];
-                end
-            end
+            dataIndices = logical((abs(Data(:, 1)-Tobsvecs{j}(k)) <= 1.e-3) .* (Data(:, 2) == i) .* (abs(Data(:, 3) - fdotvec_sig(j)) <= 1.e-13));
+            assert(sum(dataIndices) == Ntrials, 'Error: Incorrect number of trials');
+            X = [X; log10(abs(fdot_sig)), log10(Tobsvecs{j}(k)), log10(i)];
+            Y = [Y; log10(mean(Data(dataIndices, 4)))];
+            dY = [dY; std(Data(dataIndices, 4))/mean(Data(dataIndices, 4))/log(10)/sqrt(sum(dataIndices))];
         end
     end
 end
@@ -672,11 +666,10 @@ for k = 1:length(fdotvec_sig)
     s2000{k} = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*');
     sf2000{k} = surf(Tobsmat, imat, modelmats{k});
     s2000{k}.MarkerEdgeColor = rainbows{k};
-    sf2000{k}.EdgeAlpha = 0.125;
-    sf2000{k}.FaceAlpha = 0.25;
+    sf2000{k}.FaceAlpha = 0;
     sf2000{k}.FaceColor = rainbowsf{k};
     s2000{k}.LineWidth = 3;
-    sf2000{k}.EdgeAlpha = 0.5;
+    sf2000{k}.EdgeAlpha = 0;
     sf2000{k}.EdgeColor = rainbowsf{k};
     legends{k} = sprintf('fdot = %0.e Hz/s', fdotvec_sig(k));
 end
@@ -728,7 +721,7 @@ fprintf('\t(%f +/- %f) +\n', fitParams_Time(4), dParams_Time(4).d);
 
 fprintf('Chi^2 = %f\n', gof_Time.chi2);
 fprintf('Chi^2/dof = %f\n\n', gof_Time.chi2/gof_Time.dof);
-%}
+
 %% Save Fit Parameters
 
 if (SaveParams == 1)

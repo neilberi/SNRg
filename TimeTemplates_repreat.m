@@ -5,28 +5,25 @@ clc;
 close all;
 
 % Choose settings (0 = off, 1 = on)
-ParsevalSNR = 1;
+ParsevalSNR = 0; % Nonsensical if on
 NequalNseg = 0;
-Skip2TimeFields = 0;
 
-TS = 'f'; % Choose 'f' or 'fdot'
+TS = 'f'; % Choose 'f' or 'fdot', but it should not matter for template times
 TimeType = 'cpu'; % Choose 'cpu' or 'real'
 OutputFile = 1;
 
-%%
+%% Initialize and time template generation and SNRg calculation
 
 filename = 'SNRgTemplateComputationTimes.csv';
 fout = fopen(filename, 'a');
 
-Ntrials = 1;
+Ntrials = 5;
 
-fdotIn_vec = -5*10.^(-6:-5 );
+fdotIn_vec = -5*10.^(-9:-5 );
 for it1 = 1:length(fdotIn_vec)
     fdotIn = fdotIn_vec(it1);
     if (fdotIn == -5.e-9)
         TobsIn_vec = [8, 12, 16, 20, 24, 28, 32, 36, 40];
-    elseif (fdotIn == -5.e-6)
-        TobsIn_vec = [32];
     else
         TobsIn_vec = [4, 16./3, 8, 12, 16, 20, 24, 28, 32];
     end
@@ -67,16 +64,10 @@ for it1 = 1:length(fdotIn_vec)
                 f_sig = 10.;
                 
                 % Signal frequency derivative (Hz/s)
-                fdot_sig = -5.e-7;
-                if (OutputFile == 1)
-                    fdot_sig = fdotIn;
-                end
+                fdot_sig = fdotIn;
                 
                 % Length of observation (hr)
-                Tobs_hr = 8.;
-                if (OutputFile == 1)
-                    Tobs_hr = TobsIn;
-                end
+                Tobs_hr = TobsIn;
                 Tobs = Tobs_hr * 3600.;
                 
                 % Coherence time (hr) - choose so that signal drifts 0.5 bin per coherence time
@@ -91,7 +82,6 @@ for it1 = 1:length(fdotIn_vec)
                 Nseg = floor(Tobs/Tcoh);
                 if (NequalNseg == 1)
                     N = Nseg;
-                    %N = floor(Nseg/10)*10;
                 end
                 
                 Tobs = Nseg*Tcoh;
@@ -106,9 +96,6 @@ for it1 = 1:length(fdotIn_vec)
                 
                 % Create vector of f/fdot values (for search)
                 searchScale = 0;
-                if (OutputFile == 1)
-                    searchScale = 0;
-                end
                 fStepSize = TS_model(SNRgModelParams(1, :), (N+M)/2, Tobs_hr, fdot_sig);
                 fdotStepSize = TS_model(SNRgModelParams(2, :), (N+M)/2, Tobs_hr, fdot_sig);
                 if (strcmp(TS, 'f'))
@@ -309,11 +296,17 @@ for it1 = 1:length(fdotIn_vec)
                         end
                         
                         % Calculate SNRs
+                        if (ParsevalSNR == 1)
+                            noiseMeanPower = Tcoh*fsamp*noiseamp^2;
+                            noiseMeanDS = noise_mean_DS(noiseMeanPower, M, N, Nseg);
+                            noiseStdDS = noise_std_DS(noiseMeanPower, M, N, Nseg);
+                        end
+
                         for i = M:N 
                             if (ParsevalSNR == 0)
                                 SNRg_iArray(i-M+1, j*r) = abs(signalDSg_i(i-M+1) - mean(noiseDSg_i(i-M+1, :)))/std(noiseDSg_i(i-M+1, :));
                             elseif (ParsevalSNR == 1)
-                                SNRg_iArray(i-M+1, j*r) = abs(signalDSg_i(i-M+1) - noiseMean)/noiseSTD/sqrt(i);
+                                SNRg_iArray(i-M+1, j*r) = abs(signalDSg_i(i-M+1) - noiseMeanDS(i-M+1))/noiseStdDS(i-M+1);
                             end
                         end
                         
@@ -333,4 +326,30 @@ for it1 = 1:length(fdotIn_vec)
 
         end
     end
+end
+
+%% Functions
+
+% Calculate excess segments
+function [ib] = ibar(i, Nseg)
+    ib = Nseg - floor(Nseg./i).*i;
+end
+
+% Calculate mean noise detection statistic from weights and signal spectrogram
+function [D_n] = noise_mean_DS(A, M, N, Nseg)
+    i = M:N;
+    D_n = (floor(Nseg./i) + ibar(i, Nseg)).*A;
+end
+
+% Calculate standard deviation of noise detection statistic from weights and signal spectrogram
+function [sigma_n] = noise_std_DS(A, M, N, Nseg)
+    i = M:N;
+    var_n = (floor(Nseg./i).*i.^2 + ibar(i, Nseg).^2).*A^2;
+    sigma_n = sqrt(var_n);
+end
+
+% Calculate standard deviation of noise detection statistic from weights and signal spectrogram
+function [D_s] = pred_signal_DS(h_0, A, M, N, Nseg)
+    i = M:N;
+    D_s = (floor(Nseg./i).*i.^2 + ibar(i, Nseg).^2).*h_0^2 + noise_mean_DS(A, M, N, Nseg);
 end
