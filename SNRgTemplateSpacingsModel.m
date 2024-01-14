@@ -580,7 +580,7 @@ for j = 1:length(fdotvec_sig)
     Tcoh_hr = Tcoh/3600.;
     for k = 1:length(Tobsvecs{j})
         for i = 1:Nsegvecs{j}(k)
-            dataIndices = logical((abs(Data(:, 1)-Tobsvecs{j}(k)) <= 1.e-3) .* (Data(:, 2) == i) .* (abs(Data(:, 3) - fdotvec_sig(j)) <= 1.e-13));
+            dataIndices = logical((abs(Data(:, 2)-Tobsvecs{j}(k)) <= 1.e-3) .* (Data(:, 3) == i) .* (abs(Data(:, 1) - fdotvec_sig(j)) <= 1.e-13));
             assert(sum(dataIndices) == Ntrials, 'Error: Incorrect number of trials');
             X = [X; log10(abs(fdot_sig)), log10(Tobsvecs{j}(k)), log10(i)];
             Y = [Y; log10(mean(Data(dataIndices, 4)))];
@@ -602,7 +602,7 @@ for j = 1:length(fdotvec_sig)
             dataIndex = logical(dataIndices .* (X(:, 3) == log10(i)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
             if (sum(dataIndex) > 0)
                 sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), i])));
-                dY(dataIndex) = sqrt(dY(dataIndex)^2 + sysSigma^2);
+                dY(dataIndex) = sqrt(dY(dataIndex)^2 + (sysSigma/4)^2);
             end
         end
     end
@@ -663,26 +663,30 @@ figure;
 hold on;
 for k = 1:length(fdotvec_sig)
     modelmats{k} = model_func2(fitParams_Time, log10(abs(fdotvec_sig(k))), Tobsmat, imat);
-    s2000{k} = scatter3(X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*');
-    sf2000{k} = surf(Tobsmat, imat, modelmats{k});
+    s2000{k} = scatter3(10.^X(X(:, 1)==log10(abs(fdotvec_sig(k))), 2), 10.^X(X(:, 1)==log10(abs(fdotvec_sig(k))), 3), 10.^Y(X(:, 1)==log10(abs(fdotvec_sig(k)))), '*');
+    sf2000{k} = surf(10.^Tobsmat, 10.^imat, 10.^modelmats{k});
     s2000{k}.MarkerEdgeColor = rainbows{k};
-    sf2000{k}.FaceAlpha = 0;
+    sf2000{k}.EdgeAlpha = 0.125;
+    sf2000{k}.FaceAlpha = 0.25;
     sf2000{k}.FaceColor = rainbowsf{k};
     s2000{k}.LineWidth = 3;
-    sf2000{k}.EdgeAlpha = 0;
+    sf2000{k}.EdgeAlpha = 0.5;
     sf2000{k}.EdgeColor = rainbowsf{k};
-    legends{k} = sprintf('fdot = %0.e Hz/s', fdotvec_sig(k));
+    legends{k} = sprintf('%s = %0.e Hz/s', '$\dot{f}$', fdotvec_sig(k));
 end
-legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends);
-title('Computing Time Data (points) vs Model (surfaces)');
-xlabel('log(Tobs) (log(hr))');
-ylabel('log(i)');
-zlabel('log(dfdot) (log(Hz/s))');
+legend([sf2000{1}, sf2000{2}, sf2000{3}, sf2000{4}, sf2000{5}], legends, 'Interpreter', 'LaTex', 'Location', 'eastoutside');
+title('Computation Time Data (points) vs Model (surfaces)', 'Interpreter', 'LaTex');
+xlabel('$T_{obs}$ (hr)', 'Interpreter', 'LaTex');
+ylabel('$g$', 'Interpreter', 'LaTex');
+zlabel('$T_{comp} (s)$', 'Interpreter', 'LaTex');
 grid on;
 hold off;
 ax = gca;
 ax.LineWidth = 3;
-ax.FontSize = 16;
+ax.FontSize = 20;
+ax.XScale = 'log';
+ax.YScale = 'log';
+ax.ZScale = 'log';
 view(45, 30);
 
 % Calculate chi^2 contributions
@@ -721,6 +725,65 @@ fprintf('\t(%f +/- %f) +\n', fitParams_Time(4), dParams_Time(4).d);
 
 fprintf('Chi^2 = %f\n', gof_Time.chi2);
 fprintf('Chi^2/dof = %f\n\n', gof_Time.chi2/gof_Time.dof);
+
+% Perform another fit without g dependence
+Xng = zeros(length(fdotvec_sig)*length(Tobsvecs{1}), 2);
+Yng = zeros(length(fdotvec_sig)*length(Tobsvecs{1}), 1);
+dYng = Yng;
+ind = 1;
+for j = 1:length(fdotvec_sig)
+    for k = 1:length(Tobsvecs{j})
+        dataIndices = logical((X(:, 1) == log10(abs(fdotvec_sig(j)))) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
+        Xng(ind, 1) = log10(abs(fdotvec_sig(j)));
+        Xng(ind, 2) = log10(Tobsvecs{j}(k));
+        Yng(ind) = mean(Y(dataIndices));
+        dYng(ind) = sum(dY(dataIndices).^2)/sum(dataIndices);
+        ind = ind+1;
+    end
+end
+
+model_funcng = @(a, X) a(1).*X(:, 1) + ...
+                       a(2).*X(:, 2) + a(3);
+
+options = optimset("Display", "off");
+[fitParams_Timeng, dParams_Timeng, gof_Timeng] = fitChiSquare(Xng, Yng, model_funcng, fitParams_Time([3, 1, 4]), zeros(height(Xng), 2), dYng, options);
+
+model_funcng2 = @(a, fdot_log, Tobs_log) a(1).*fdot_log + ...
+                                         a(2).*Tobs_log + a(3);
+
+[fdotmatng, Tobsmatng] = meshgrid(linspace(log10(min(abs(fdotvec_sig))), log10(max(abs(fdotvec_sig)))), linspace(log10(1), log10(max(Tobsvecs{1})), 100), 100);
+modelmatng = model_funcng2(fitParams_Timeng, fdotmatng, Tobsmatng);
+
+figure;
+hold on;
+sng = scatter3(10.^Xng(:, 1), 10.^Xng(:, 2), 10.^Yng, '*');
+sfng = surf(10.^fdotmatng, 10.^Tobsmatng, 10.^modelmatng);
+title('Computation Time Data vs Model', 'Interpreter', 'LaTex');
+xlabel('$\dot{f}$ (Hz/s)', 'Interpreter', 'LaTex');
+ylabel('$T_{obs} (hr)$', 'Interpreter', 'LaTex');
+zlabel('$T_{comp} (s)$', 'Interpreter', 'LaTex');
+legend('data', 'fit', 'Location', 'eastoutside');
+sng.MarkerEdgeColor = 'm';
+sng.LineWidth = 3;
+sfng.EdgeAlpha = 0.6;
+sfng.FaceAlpha = 0.6;
+grid on;
+hold off;
+ax = gca;
+ax.LineWidth = 3;
+ax.FontSize = 20;
+ax.XScale = 'log';
+ax.YScale = 'log';
+ax.ZScale = 'log';
+view(45, 30);
+
+fprintf('log(CompTime_ng) =\n\t(%f +/- %f)log(|fdot|) +\n', fitParams_Timeng(1), dParams_Timeng(1).d);
+fprintf('\t(%f +/- %f)log(Tobs) +\n', fitParams_Timeng(2), dParams_Timeng(2).d);
+fprintf('\t(%f +/- %f)\n', fitParams_Timeng(3), dParams_Timeng(3).d);
+
+fprintf('Chi^2 = %f\n', gof_Timeng.chi2);
+fprintf('Chi^2/dof = %f\n\n', gof_Time.chi2/gof_Timeng.dof);
+
 
 %% Save Fit Parameters
 

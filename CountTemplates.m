@@ -16,7 +16,7 @@ f2 = 1000;
 
 % Choose min and max frequency derivatives (Hz/s)
 % NOTE: fdot1 < fdot2, but |fdot1| > |fdot2|, as fdot < 0
-fdot1 = -5.e-5;
+fdot1 = -5.e-7;
 fdot2 = -5.e-9;
 
 %% Calculate template count for one chosen i and Tobs
@@ -35,6 +35,7 @@ N_T = count_templates_max(i, Tobs_hr, f1, f2, fdot1, fdot2, params);
 fprintf('For searching the space %1.f Hz <= f<= %1.f Hz \nand %1.e Hz/s <= fdot <= %1.e Hz/s\n', f1, f2, fdot1, fdot2);
 fprintf('with Tobs = %1.f hr and i = %d,\n', Tobs_hr, i);
 fprintf('%e templates are required.\n', N_T);
+fprintf('Template Count per unit frequency: %e\n', N_T/(f2-f1));
 
 %% Calculate Template Count for range of i and Tobs for valid constant i based on fdot2
 
