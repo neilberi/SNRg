@@ -167,7 +167,9 @@ for it1 = 1:length(fdotIn_vec)
             for it3 = 1:Ntrials
                 f = @() GenerateTemplate(fdot_sig, g, rawSpectrogram, f_sig, freqlo, freqhi, hamp, Tcoh, t, tMid, Nseg, nbandbin, indbandlo, indbandhi, Nsample_coh, nNoiseSample, nBinSide, noiseOffset, noiseMeanDS, noiseStdDS, ParsevalSNR);
                 time = timeit(f);
-                fprintf(fout, '%e, %e, %e, %e\n', fdot_sig, Tobs_hr, g, time);
+                if (OutputFile == 1)
+                    fprintf(fout, '%e, %e, %e, %e\n', fdot_sig, Tobs_hr, g, time);
+                end
             end
         end
 
@@ -177,25 +179,25 @@ end
 %% Functions
 
 % Calculate excess segments
-function [ib] = ibar(i, Nseg)
-    ib = Nseg - floor(Nseg./i).*i;
+function [gb] = gbar(g, Nseg)
+    gb = Nseg - floor(Nseg./g).*g;
 end
 
 % Calculate mean noise detection statistic from weights and signal spectrogram
 function [D_n] = noise_mean_DS(A, M, N, Nseg)
-    i = M:N;
-    D_n = (floor(Nseg./i) + ibar(i, Nseg)).*A;
+    g = M:N;
+    D_n = (floor(Nseg./g) + gbar(g, Nseg)).*A;
 end
 
 % Calculate standard deviation of noise detection statistic from weights and signal spectrogram
 function [sigma_n] = noise_std_DS(A, M, N, Nseg)
-    i = M:N;
-    var_n = (floor(Nseg./i).*i.^2 + ibar(i, Nseg).^2).*A^2;
+    g = M:N;
+    var_n = (floor(Nseg./g).*g.^2 + gbar(g, Nseg).^2).*A^2;
     sigma_n = sqrt(var_n);
 end
 
 % Calculate standard deviation of noise detection statistic from weights and signal spectrogram
 function [D_s] = pred_signal_DS(h_0, A, M, N, Nseg)
-    i = M:N;
-    D_s = (floor(Nseg./i).*i.^2 + ibar(i, Nseg).^2).*h_0^2 + noise_mean_DS(A, M, N, Nseg);
+    g = M:N;
+    D_s = (floor(Nseg./g).*g.^2 + gbar(g, Nseg).^2).*h_0^2 + noise_mean_DS(A, M, N, Nseg);
 end

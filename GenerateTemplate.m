@@ -1,6 +1,6 @@
 function [SNRg] = GenerateTemplate(fdot_sig, g, rawSpectrogram, f_sig, freqlo, freqhi, hamp, Tcoh, t, tMid, Nseg, nbandbin, indbandlo, indbandhi, Nsample_coh, nNoiseSample, nBinSide, noiseOffset, noiseMeanDS, noiseStdDS, ParsevalSNR)
 %Generates template and calculates SNRg
-fprintf('Calulating SNRg_is for df = %e Hz\n', 0);
+fprintf('Calulating SNRg for f = %e Hz and fdot = %e Hz/s\n', f_sig, fdot_sig);
 
 % Calculate expected phase/frequency trajectories and signal
 freqTraj = f_sig + fdot_sig.*tMid; 
@@ -37,10 +37,10 @@ for tIndex = 1:Nseg
 end
 
 % Calculate detection statistics
-signalDSg_i = zeros(1, 1);
+signalDSg = zeros(1, 1);
 grouper_sig = (1+sqrt(-1)).*zeros(1, 1);
 if (ParsevalSNR == 0)
-    noiseDSg_i = (1+sqrt(-1)).*zeros(1, nNoiseSample);
+    noiseDSg = (1+sqrt(-1)).*zeros(1, nNoiseSample);
     grouper_noise = (1+sqrt(-1)).*zeros(1, nNoiseSample);
 end
 
@@ -52,10 +52,10 @@ for tIndex = 1:Nseg
         contribution = abs(grouper_sig(1))^2;
 
         if (mod(tIndex, i) == 0)
-            signalDSg_i(1) = signalDSg_i(1) + contribution;
+            signalDSg(1) = signalDSg(1) + contribution;
             grouper_sig(1) = 0;
         elseif (tIndex == Nseg)
-            signalDSg_i(1) = signalDSg_i(1) + contribution;
+            signalDSg(1) = signalDSg(1) + contribution;
         end
     end
 
@@ -69,10 +69,10 @@ for tIndex = 1:Nseg
             contribution = abs(grouper_noise(1, :)).^2;
 
             if (mod(tIndex, i) == 0)
-                noiseDSg_i(1, :) = noiseDSg_i(1, :) + contribution;
+                noiseDSg(1, :) = noiseDSg(1, :) + contribution;
                 grouper_noise(1, :) = 0;
             elseif (tIndex == Nseg)
-                noiseDSg_i(1, :) = noiseDSg_i(1, :) + contribution;
+                noiseDSg(1, :) = noiseDSg(1, :) + contribution;
             end
         end
     end
@@ -81,9 +81,9 @@ end
 
 for i = g:g
     if (ParsevalSNR == 0)
-        SNRg = abs(signalDSg_i(1) - mean(noiseDSg_i(1, :)))/std(noiseDSg_i(1, :));
+        SNRg = abs(signalDSg(1) - mean(noiseDSg(1, :)))/std(noiseDSg(1, :));
     elseif (ParsevalSNR == 1)
-        SNRg = abs(signalDSg_i(1) - noiseMeanDS(g))/noiseStdDS(g);
+        SNRg = abs(signalDSg(1) - noiseMeanDS(g))/noiseStdDS(g);
     end
 end
 end

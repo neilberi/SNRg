@@ -1,4 +1,8 @@
-function [SNRg] = GenerateTemplate(fdot_sig, g, rawSpectrogram, f_sig, freqlo, freqhi, hamp, Tcoh, t, tMid, Nseg, nbandbin, indbandlo, indbandhi, Nsample_coh, nNoiseSample, nBinSide, noiseOffset, noiseMeanDS, noiseStdDS, ParsevalSNR)
+function [pow2s, SNRg] = GenerateTemplate2(fdot_sig, rawSpectrogram, f_sig, freqlo, freqhi, hamp, Tcoh, t, tMid, Nseg, nbandbin, indbandlo, indbandhi, Nsample_coh, nNoiseSample, nBinSide, noiseOffset, noiseMeanDS, noiseStdDS, ParsevalSNR)
+
+pow2s = 2.^(1:floor(log2(Nseg)));
+N2s = length(pow2s);
+
 %Generates template and calculates SNRg
 fprintf('Calulating SNRg_is for df = %e Hz\n', 0);
 
@@ -37,25 +41,25 @@ for tIndex = 1:Nseg
 end
 
 % Calculate detection statistics
-signalDSg_i = zeros(1, 1);
-grouper_sig = (1+sqrt(-1)).*zeros(1, 1);
+signalDSg = zeros(N2s, 1);
+grouper_sig = (1+sqrt(-1)).*zeros(N2s, 1);
 if (ParsevalSNR == 0)
-    noiseDSg_i = (1+sqrt(-1)).*zeros(1, nNoiseSample);
-    grouper_noise = (1+sqrt(-1)).*zeros(1, nNoiseSample);
+    noiseDSg = (1+sqrt(-1)).*zeros(N2s, nNoiseSample);
+    grouper_noise = (1+sqrt(-1)).*zeros(N2s, nNoiseSample);
 end
 
 for tIndex = 1:Nseg
     % Signal detection statistics
     grouper_sig = grouper_sig + sum(conj(weightedFFT((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).*rawSpectrogram((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex));
-    for i = g:g
+    for g = pow2s
 
-        contribution = abs(grouper_sig(1))^2;
+        contribution = abs(grouper_sig(log2(g)))^2;
 
-        if (mod(tIndex, i) == 0)
-            signalDSg_i(1) = signalDSg_i(1) + contribution;
+        if (mod(tIndex, g) == 0)
+            signalDSg(log2(g)) = signalDSg(log2(g)) + contribution;
             grouper_sig(1) = 0;
         elseif (tIndex == Nseg)
-            signalDSg_i(1) = signalDSg_i(1) + contribution;
+            signalDSg(log2(g)) = signalDSg(log2(g)) + contribution;
         end
     end
 
@@ -64,26 +68,26 @@ for tIndex = 1:Nseg
         for k = 1:nNoiseSample
             grouper_noise(:, k) = grouper_noise(:, k) + sum(conj(weightedFFT((fIndex(tIndex)-nBinSide):(fIndex(tIndex)+nBinSide), tIndex)).*rawSpectrogram((fIndex_noise(k, tIndex)-nBinSide):(fIndex_noise(k, tIndex)+nBinSide), tIndex));
         end
-        for i = g:g
+        for g = pow2s
 
-            contribution = abs(grouper_noise(1, :)).^2;
+            contribution = abs(grouper_noise(log2(g), :)).^2;
 
-            if (mod(tIndex, i) == 0)
-                noiseDSg_i(1, :) = noiseDSg_i(1, :) + contribution;
+            if (mod(tIndex, g) == 0)
+                noiseDSg(log2(g), :) = noiseDSg(log2(g), :) + contribution;
                 grouper_noise(1, :) = 0;
             elseif (tIndex == Nseg)
-                noiseDSg_i(1, :) = noiseDSg_i(1, :) + contribution;
+                noiseDSg(log2(g), :) = noiseDSg(log2(g), :) + contribution;
             end
         end
     end
 end
 
-
-for i = g:g
+SNRg = zeros(N2s, 1);
+for g = pow2s
     if (ParsevalSNR == 0)
-        SNRg = abs(signalDSg_i(1) - mean(noiseDSg_i(1, :)))/std(noiseDSg_i(1, :));
+        SNRg(log2(g)) = abs(signalDSg(log2(g)) - mean(noiseDSg(log2(g), :)))/std(noiseDSg(log2(g), :));
     elseif (ParsevalSNR == 1)
-        SNRg = abs(signalDSg_i(1) - noiseMeanDS(g))/noiseStdDS(g);
+        SNRg(log2(g)) = abs(signalDSg(log2(g)) - noiseMeanDS(g))/noiseStdDS(g);
     end
 end
 end

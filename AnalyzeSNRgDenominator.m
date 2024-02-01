@@ -50,20 +50,20 @@ sigmadenoms = std(Data)/sqrt(Ntrials);
 noiseMeanPower = Tcoh*fsamp*noiseamp^2;
 noiseMeanDS = noise_mean_DS(noiseMeanPower, 1, Nseg, Nseg);
 noiseStdDS = noise_std_DS(noiseMeanPower, 1, Nseg, Nseg);
-ivec = 1:Nseg;
-iVals = 1:Nseg;
-perfiVals = iVals(Nseg./iVals == floor(Nseg./iVals));
+gvec = 1:Nseg;
+gVals = 1:Nseg;
+perfgVals = gVals(Nseg./gVals == floor(Nseg./gVals));
 preddenoms = noiseStdDS;
-perfpreddenoms = sqrt(perfiVals).*noiseMeanPower*sqrt(Nseg);
+perfpreddenoms = sqrt(perfgVals).*noiseMeanPower*sqrt(Nseg);
 
 % Plot
 figure;
 hold on;
-s1 = scatter(perfiVals, perfpreddenoms, 100, 'p');
-p1 = plot(ivec, preddenoms, 'LineWidth', 3);
+s1 = scatter(perfgVals, perfpreddenoms, 100, 'p');
+p1 = plot(gvec, preddenoms, 'LineWidth', 3);
 s1.CData = 0.8*[204, 204, 255]/255;
 p1.Color = s1.CData;
-e1 = errorbar(iVals, denoms, sigmadenoms, sigmadenoms);
+e1 = errorbar(gVals, denoms, sigmadenoms, sigmadenoms);
 e1.LineStyle = 'none';
 e1.LineWidth = 2;
 title('SNR$_g$ Denominator vs $g$', 'Interpreter', 'LaTex');
@@ -89,25 +89,25 @@ function [h_0] = h0rms(S, fIndex, Nseg, nBinSide)
 end
 
 % Calculate excess segments
-function [ib] = ibar(i, Nseg)
-    ib = Nseg - floor(Nseg./i).*i;
+function [gb] = gbar(g, Nseg)
+    gb = Nseg - floor(Nseg./g).*g;
 end
 
 % Calculate mean noise detection statistic from weights and signal spectrogram
 function [D_n] = noise_mean_DS(A, M, N, Nseg)
-    i = M:N;
-    D_n = (floor(Nseg./i) + ibar(i, Nseg)).*A;
+    g = M:N;
+    D_n = (floor(Nseg./g) + gbar(g, Nseg)).*A;
 end
 
 % Calculate standard deviation of noise detection statistic from weights and signal spectrogram
 function [sigma_n] = noise_std_DS(A, M, N, Nseg)
-    i = M:N;
-    var_n = (floor(Nseg./i).*i.^2 + ibar(i, Nseg).^2).*A^2;
+    g = M:N;
+    var_n = (floor(Nseg./g).*g.^2 + gbar(g, Nseg).^2).*A^2;
     sigma_n = sqrt(var_n);
 end
 
 % Calculate standard deviation of noise detection statistic from weights and signal spectrogram
 function [D_s] = pred_signal_DS(h_0, A, M, N, Nseg)
-    i = M:N;
-    D_s = (floor(Nseg./i).*i.^2 + ibar(i, Nseg).^2).*h_0^2 + noise_mean_DS(A, M, N, Nseg);
+    g = M:N;
+    D_s = (floor(Nseg./g).*g.^2 + gbar(g, Nseg).^2).*h_0^2 + noise_mean_DS(A, M, N, Nseg);
 end
