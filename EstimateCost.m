@@ -13,38 +13,41 @@ ColorMapView = 1;
 
 % Choose min and max frequencies (in Hz)
 f1 = 10;
-f2 = 10.005;
+f2 = 10.00005;
 
 % Choose min and max frequency derivatives (Hz/s)
 % NOTE: fdot1 < fdot2, but |fdot1| > |fdot2|, as fdot < 0
-fdot1 = -1.e-8;
-fdot2 = -5.e-9;
+fdot1 = -1.01e-5;
+fdot2 = -1.e-5;
 
 %% Calculate template count for one chosen i and Tobs
 
 % Choose grouping number i and observation period (hr) for calculation of
 % single template count
-g = 5;
-Tobs_hr = 10;
+g = 100;
+Tobs_hr = 5;
 
 % Load parameters and calculate template count from analytically integated formula
 params = readmatrix('SNRgModelParams.csv');
 
 N_T = count_templates_max(g, Tobs_hr, f1, f2, fdot1, fdot2, params);
 T_comp = time_search_max(g, Tobs_hr, f1, f2, fdot1, fdot2, params);
+T_comp2 = time_search2(Tobs_hr, f1, f2, fdot1, fdot2, params);
 
 % Print template count
 fprintf('For searching the space %1.f Hz <= f<= %1.f Hz \nand %1.e Hz/s <= fdot <= %1.e Hz/s\n', f1, f2, fdot1, fdot2);
 fprintf('with Tobs = %1.f hr and g = %d,\n', Tobs_hr, g);
 fprintf('%e templates are required.\n', N_T);
-fprintf('Template Count per unit frequency: %e (1/Hz)\n', N_T/(f2-f1));
-fprintf('The computation time is %e s\n', T_comp);
-fprintf('Time per unit frequency: %e (s/Hz)\n', T_comp/(f2-f1));
+fprintf('\tTemplate Count per unit frequency: %e (1/Hz)\n', N_T/(f2-f1));
+fprintf('The computation time (max g) is %e s\n', T_comp);
+fprintf('\tTime per unit frequency: %e (s/Hz)\n', T_comp/(f2-f1));
+fprintf('The computation time (g in powers of 2) is %e s\n', T_comp2);
+fprintf('\tTime per unit frequency: %e (s/Hz)\n', T_comp2/(f2-f1));
 
 %% Calculate Template Count for range of i and Tobs for valid constant i based on fdot2
 
 % Create grids of Tobs and g
-Tobsvec_hr = 1:0.4:40;
+Tobsvec_hr = 4:0.4:40;
 Nsegline = floor(3600.*Tobsvec_hr.*sqrt(2.*abs(fdot1)));
 gvec = 1:round(max(Tobsvec_hr)*3600*sqrt(2*abs(-5.e-5)));
 
@@ -151,27 +154,18 @@ hold off;
 
 %% Calculate Search Time for range of g and Tobs using every valid g which is a power of 2
 
-model_func = @(a, fdot_log, Tobs_log, g_log) a(1).*Tobs_log + ...
-                                              a(2).*g_log + ...
-                                              a(3)*fdot_log + a(4);
+T_compvec2 = time_search2(Tobsvec_hr, f1, f2, fdot1, fdot2, params);
 
-model_funcX = @(a, fdot_log, Tobs_log)  a(1).*fdot_log.^2 + ...
-                                        a(2).*fdot_log.*Tobs_log + ...
-                                        a(3).*Tobs_log.^2 + ...
-                                        a(4).*fdot_log + ...
-                                        a(5).*Tobs_log + ...
-                                        a(6);
+figure;
+plot(Tobsvec_hr, T_compvec2, 'LineWidth', 3); 
+set(gca, 'YScale', 'log');
+title(sprintf('Computation Time of Search with %s on [%1.f, %1.f] Hz and %s on [%1.e, %1.e] Hz/s \nusing every valid %s that is a power of 2', '$f_0$', f1, f2, '$\dot{f}$', fdot1, fdot2, '$g$'), 'Interpreter', 'LaTex')
+xlabel('$T_{obs}$ (hr)', 'Interpreter', 'LaTex');
+ylabel('$T_{comp}$ (s)', 'Interpreter', 'LaTex');
+ax = gca;
+ax.FontSize = 15;
+grid on;
 
-rho_comp = @(fdot, Tobs_hr) 10.^(model_funcX(params(5, :), log10(abs(fdot)), log10(Tobs_hr)))./10.^(model_func(params(1, :), log10(abs(fdot)), log10(Tobs_hr), log10(2.^floor(log2(floor(3600*Tobs_hr*sqrt(2*abs(fdot))))))))./10.^(model_func(params(2, :), log10(abs(fdot)), log10(Tobs_hr), log10(2.^floor(log2(floor(3600*Tobs_hr*sqrt(2*abs(fdot))))))));
-T_compmat2 = zeros(size(Tobsvec_hr));
-
-for i = 1:length(Tobsvec_hr)
-    T_compmat2(i) = (f2-f1)*integral(@(x) rho_comp(x, Tobsvec_hr(i)), fdot1, fdot2);
-end
-
-figure;plot(Tobsvec_hr, T_compmat2, 'LineWidth', 3); set(gca, 'YScale', 'log');
-title('Computation Times using every valid g that is a power of 2'); xlabel('Tobs (hr)'); ylabel('Time (s)');
-ax = gca; ax.FontSize = 15;
 
 %% Functions (Tobs in hr for all)
 
@@ -180,7 +174,9 @@ ax = gca; ax.FontSize = 15;
 function validity = is_valid_g_scalar(g, Tobs, fdot2)
     epsilon = 1.e-12;
     g_raw = Tobs*3600*sqrt(2*abs(fdot2));
-    if ((ceil(g_raw) - g_raw) <= epsilon)
+    if (g == 1)
+        validity = 1;
+    elseif ((ceil(g_raw) - g_raw) <= epsilon)
         validity = g <= ceil(g_raw);
     else
         validity = g <= floor(g_raw);
@@ -234,8 +230,8 @@ end
 
 % Estimate cost for search over f-fdot range with given g and Tobs_in
 % g_in and Tobs must be same size
-function T_T = time_search(g_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params)       
-        T_T = 10.^(params(4, 3)-params(1, 4)-params(2, 4)) .* ...
+function T_comp = time_search(g_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params)       
+        T_comp = 10.^(params(4, 3)-params(1, 4)-params(2, 4)) .* ...
               Tobs_in.^(params(4, 2)-params(1, 1)-params(2, 1)) .* ...
               g_in.^(-params(1, 2)-params(2, 2)) .* ...
               (f2_in - f1_in) .* ...
@@ -245,14 +241,14 @@ end
 
 % Time search using max possible g for each subrange of fdot
 % NOT VECTORIZED
-function T_T = time_search_max_scalar(gmax_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params)
+function T_comp = time_search_max_scalar(gmax_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params)
     fdot_max = -gmax_in^2/2/(3600*Tobs_in)^2;
     if (is_valid_g_scalar(gmax_in, Tobs_in, fdot2_in))
-        T_T = time_search(gmax_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params);
+        T_comp = time_search(gmax_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params);
     elseif (fdot_max < fdot1_in)
-        T_T = time_search_max_scalar(gmax_in-1, Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params);
+        T_comp = time_search_max_scalar(gmax_in-1, Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params);
     else
-        T_T = time_search_max_scalar(gmax_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot_max, params) + ... 
+        T_comp = time_search_max_scalar(gmax_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot_max, params) + ... 
               time_search_max_scalar(gmax_in-1, Tobs_in, f1_in, f2_in, fdot_max, fdot2_in, params);
     end
 end
@@ -264,5 +260,44 @@ function T_comp = time_search_max(gmax_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot
     T_comp = zeros(size(gmax_in));
     for k = 1:numel(gmax_in)
         T_comp(k) = time_search_max_scalar(gmax_in(k), Tobs_in(k), f1_in, f2_in, fdot1_in, fdot2_in, params);
+    end
+end
+
+% Estimate cost for search over f-fdot range with given g and Tobs_in
+% g_in and Tobs must be same size
+function T_comp2 = time_search2_valid(g_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params)
+    T_comp2 = 10.^(params(5, 3)-params(1, 4)-params(2, 4)) .* ...
+              Tobs_in.^(params(5, 2)-params(1, 1)-params(2, 1)) .* ...
+              g_in.^(-params(1, 2)-params(2, 2)) .* ...
+              (f2_in - f1_in) .* ...
+              (abs(fdot1_in).^(1+params(5, 1)-params(1, 3)-params(2, 3)) - abs(fdot2_in).^(1+params(5, 1)-params(1, 3)-params(2, 3))) ./ ...
+              (1+params(5, 1)-params(1, 3)-params(2, 3));
+end
+
+% Time search using max possible g for each subrange of fdot
+% NOT VECTORIZED
+function T_comp2 = time_search2_scalar(Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params, x)
+    if ~exist('x', 'var')
+        x = 0;
+    end
+    gmax_in = 2.^(floor(log2(max([floor(3600*Tobs_in*sqrt(2*abs(fdot1_in))), 1]))) - x);
+    fdot_max = -gmax_in^2/2/(3600*Tobs_in)^2;
+    if (is_valid_g_scalar(gmax_in, Tobs_in, fdot2_in))
+        T_comp2 = time_search2_valid(gmax_in, Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params);
+    elseif (fdot_max < fdot1_in)
+        T_comp2 = time_search2_scalar(Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params, x+1);
+    else
+        T_comp2 = time_search2_scalar(Tobs_in, f1_in, f2_in, fdot1_in, fdot_max, params, x) + ... 
+                  time_search2_scalar(Tobs_in, f1_in, f2_in, fdot_max, fdot2_in, params, x+1);
+    end
+end
+
+% Time search using max possible g for each subrange of fdot
+% g_in and Tobs must be same size
+% VECTORIZED
+function T_comp2 = time_search2(Tobs_in, f1_in, f2_in, fdot1_in, fdot2_in, params)
+    T_comp2 = zeros(size(Tobs_in));
+    for k = 1:numel(Tobs_in)
+        T_comp2(k) = time_search2_scalar(Tobs_in(k), f1_in, f2_in, fdot1_in, fdot2_in, params);
     end
 end

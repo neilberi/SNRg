@@ -19,7 +19,7 @@ Tobs_hr = 5;
 Tobs = 3600*Tobs_hr;
 
 % Set maximum group length
-gmax = 100;
+gmax = Inf;
 
 % Load search parameters and define model functions
 model_func = @(params, Tobs_hr, g, fdot) 10.^( params(1).*log10(Tobs_hr) + ...
@@ -28,28 +28,29 @@ model_func = @(params, Tobs_hr, g, fdot) 10.^( params(1).*log10(Tobs_hr) + ...
                                                params(4) );
 
 model_funcng = @(params, fdot, Tobs_hr) 10.^( params(1).*log10(abs(fdot)) + ...
-                                             params(2).*log10(Tobs_hr) + ... 
-                                             params(3) );
+                                              params(2).*log10(Tobs_hr) + ... 
+                                              params(3) );
 
 params = readmatrix('SNRgModelParams.csv');
-params_TSf = params(1, 1:4);
-params_TSfdot = params(2, 1:4);
-params_SNR = params(3, 1:4);
+params_TSf = params(1, :);
+params_TSfdot = params(2, :);
+params_SNR = params(3, :);
 params_temptime = params(4, 1:3);
+params_temptime2 = params(5, 1:3);
 
 % Define grid of templates
 Tfdot = fdot2;
 while (Tfdot(end) > fdot1)
-    Tfdot = [Tfdot, Tfdot(end) - model_func(params_TSfdot, Tobs_hr, min([gmax, floor(Tobs*sqrt(2*abs(Tfdot(end))))]), Tfdot(end))]; %#ok<*AGROW>
+    Tfdot = [Tfdot, Tfdot(end) - model_func(params_TSfdot, Tobs_hr, 2.^floor(log2(floor(3600*Tobs_hr*sqrt(2*abs(Tfdot(end)))))), Tfdot(end))]; %#ok<*AGROW>
 end
 Tf = cell(1, length(Tfdot));
 SNRg = Tf;
 for k = 1:length(Tf)
     Tf{k} = f1;
     while (Tf{k}(end) < f2)
-        Tf{k} = [Tf{k}, Tf{k}(end) + model_func(params_TSf, Tobs_hr, min([gmax, floor(Tobs*sqrt(2*abs(Tfdot(k))))]), Tfdot(k))]; %#ok<*AGROW>
+        Tf{k} = [Tf{k}, Tf{k}(end) + model_func(params_TSf, Tobs_hr, 2.^floor(log2(floor(3600*Tobs_hr*sqrt(2*abs(Tfdot(end)))))), Tfdot(k))]; %#ok<*AGROW>
     end
-    SNRg{k} = zeros(size(Tf{k}));
+    SNRg{k} = cell(size(Tf{k}));
 end
 
 % Count templates
@@ -79,7 +80,7 @@ hamp = 1;
 f_sig = 10+0.005/2.;
 
 % Signal frequency derivative (Hz/s)
-fdot_sig = -2.4e-8;
+fdot_sig = -2.4e-9;
 fprintf('Signal parameters: f = %e Hz, fdot = %e Hz/s\n\n', f_sig, fdot_sig);
 
 % Define time series to hold raw data stream of signal plus noise
@@ -136,9 +137,6 @@ for i = 1:length(Tfdot)
 
     for j = 1:length(Tf{i})
         f = Tf{i}(j);
-        if (f == Tf{end}(end))
-            Neil = 5;
-        end
 
         % Search band width (Hz)
         bandscale = 130; % Increase if fIndex is too high/low
@@ -165,8 +163,8 @@ for i = 1:length(Tfdot)
         freqTrajIndex = round(((1:Nseg) - 0.5).*Nsample_coh) + 1;
         tMid = t(freqTrajIndex);
         
-        SNRg{i}(j) = GenerateTemplate(fdot, min([gmax, floor( Tobs_r*sqrt(2*abs(fdot)) )]), rawSpectrogram, f, freqlo, freqhi, hamp, Tcoh, t, tMid, Nseg, nbandbin, indbandlo, indbandhi, Nsample_coh, nNoiseSample, nBinSide, noiseOffset, noiseMeanDS, noiseStdDS, ParsevalSNR);
-        %func = @ () GenerateTemplate(fdot, min([gmax, floor( Tobs_r*sqrt(2*abs(fdot)) )]), rawSpectrogram, f, freqlo, freqhi, hamp, Tcoh, t, tMid, Nseg, nbandbin, indbandlo, indbandhi, Nsample_coh, nNoiseSample, nBinSide, noiseOffset, noiseMeanDS, noiseStdDS, ParsevalSNR);
+        SNRg{i}{j} = GenerateTemplate2(fdot, rawSpectrogram, f, freqlo, freqhi, hamp, Tcoh, t, tMid, Nseg, nbandbin, indbandlo, indbandhi, Nsample_coh, nNoiseSample, nBinSide, noiseOffset, noiseMeanDS, noiseStdDS, ParsevalSNR);
+        %func = @ () GenerateTemplate2(fdot, rawSpectrogram, f, freqlo, freqhi, hamp, Tcoh, t, tMid, Nseg, nbandbin, indbandlo, indbandhi, Nsample_coh, nNoiseSample, nBinSide, noiseOffset, noiseMeanDS, noiseStdDS, ParsevalSNR);
         %timeitT_comp = timeitT_comp + timeit(func);
     end
 end
@@ -177,7 +175,7 @@ p = profile('info');
 
 T_comp_sum = 0;
 for i = 1:length(Tfdot)
-    T_comp_sum = T_comp_sum + length(Tf{i})*model_funcng(params_temptime, Tfdot(i), Tobs_hr);
+    T_comp_sum = T_comp_sum + length(Tf{i})*model_funcng(params_temptime2, Tfdot(i), Tobs_hr);
 end
 
 %% Functions

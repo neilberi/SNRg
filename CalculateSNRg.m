@@ -7,8 +7,8 @@ close all;
 % Choose settings (0 = off, 1 = on)
 ParsevalSNR = 1; 
 Animation = 0;
-NequalNseg = 1;
-PlotSNRvsParam = 0;
+NequalNseg = 0;
+PlotSNRvsParam = 1;
 PlotLastTimeSegment = 0;
 PlotTSvsg_log = 0;
 OutputFile1 = 0;
@@ -52,10 +52,10 @@ hamp = 1;
 f_sig = 10.;
 
 % Signal frequency derivative (Hz/s)
-fdot_sig = -5.e-7;
+fdot_sig = -5.e-8;
 
 % Length of observation (hr)
-Tobs_hr = 8.;
+Tobs_hr = 4.;
 Tobs = Tobs_hr * 3600.;
 
 % Coherence time (hr) - choose so that signal drifts 0.5 bin per coherence time
@@ -98,7 +98,7 @@ end
 
 % Calculate template spacings from model
 SNRgModelParams = readmatrix('SNRgModelParams.csv');
-TS_model = @(a, i, Tobs, fdot) 10^a(4)*Tobs^a(1)*i^a(2)*abs(fdot)^a(3);
+TS_model = @(a, g, Tobs, fdot) 10^a(4)*Tobs^a(1)*g^a(2)*abs(fdot)^a(3);
 
 % Create vector of f/fdot values (for search)
 searchScale = 10;

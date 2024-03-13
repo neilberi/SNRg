@@ -807,7 +807,7 @@ for j = 1:length(fdotvec_sig)
         dataIndices = logical((abs(Data(:, 1)-fdotvec_sig(j)) < 1.e-13) .* (abs(Data(:, 2)-Tobsvecs{j}(k)) < 1.e-3));
         X2(ind, 1) = log10(abs(fdotvec_sig(j)));
         X2(ind, 2) = log10(Tobsvecs{j}(k));
-        Y2(ind) = mean(Data(dataIndices, 3));
+        Y2(ind) = log10(mean(Data(dataIndices, 3)));
         dY2(ind) = std(Data(dataIndices, 3))/mean(Data(dataIndices, 3))/log(10)/sqrt(sum(dataIndices));
         ind = ind+1; 
     end
@@ -824,26 +824,12 @@ for j = 1:length(fdotvec_sig)
     end
 end
 
-% Perform fit
-model_funcX = @(a, X) a(1).*X(:, 1).^2 + ...
-                      a(2).*X(:, 1).*X(:, 2) + ...
-                      a(3).*X(:, 2).^2 + ...
-                      a(4).*X(:, 1) + ...
-                      a(5).*X(:, 2) + ...
-                      a(6);
-
 % Add systematic uncertainties
 options = optimset("Display", "off");
-[fitParams_Time2, dParams_Time2, gof_Time2] = fitChiSquare(X2, Y2, model_funcX, [0, 0, 0, plane_fitParams], zeros(height(X2), 2), dY2, options);
+[fitParams_Time2, dParams_Time2, gof_Time2] = fitChiSquare(X2, Y2, model_funcng, fitParams_Time([3, 1, 4]), zeros(height(X2), 2), dY2, options);
 
-model_funcX2 = @(a, fdot_log, Tobs_log) a(1).*fdot_log.^2 + ...
-                                        a(2).*fdot_log.*Tobs_log + ...
-                                        a(3).*Tobs_log.^2 + ...
-                                        a(4).*fdot_log + ...
-                                        a(5).*Tobs_log + ...
-                                        a(6);
 [fdotmat2, Tobsmat2] = meshgrid(linspace(log10(min(abs(fdotvec_sig))), log10(max(abs(fdotvec_sig)))), linspace(log10(4), log10(max(Tobsvecs{1})), 100), 100);
-modelmat2 = model_funcX2(fitParams_Time2, fdotmat2, Tobsmat2);
+modelmat2 = model_funcng2(fitParams_Time2, fdotmat2, Tobsmat2);
 
 % Plot
 figure;
@@ -870,12 +856,9 @@ ax.ZScale = 'log';
 view(45, 30);
 
 % Printa
-fprintf('log(CompTime2) =\n\t(%f +/- %f)log(|fdot|)^2 +\n', fitParams_Time2(1), dParams_Time2(1).d);
-fprintf('\t(%f +/- %f)log(|fdot|)log(Tobs) +\n', fitParams_Time2(2), dParams_Time2(2).d);
-fprintf('\t(%f +/- %f)log(Tobs)^2 +\n', fitParams_Time2(3), dParams_Time2(3).d);
-fprintf('\t(%f +/- %f)log(|fdot|) +\n', fitParams_Time2(4), dParams_Time2(4).d);
-fprintf('\t(%f +/- %f)log(Tobs) +\n', fitParams_Time2(5), dParams_Time2(5).d);
-fprintf('\t(%f +/- %f)\n', fitParams_Time2(6), dParams_Time2(6).d);
+fprintf('log(CompTime2) =\n\t(%f +/- %f)log(|fdot|) +\n', fitParams_Time2(1), dParams_Time2(1).d);
+fprintf('\t(%f +/- %f)log(Tobs) +\n', fitParams_Time2(2), dParams_Time2(2).d);
+fprintf('\t(%f +/- %f)\n', fitParams_Time2(3), dParams_Time2(3).d);
 
 fprintf('Chi^2 = %f\n', gof_Time2.chi2);
 fprintf('Chi^2/dof = %f\n\n', gof_Time2.chi2/gof_Time2.dof);
@@ -883,5 +866,5 @@ fprintf('Chi^2/dof = %f\n\n', gof_Time2.chi2/gof_Time2.dof);
 %% Save Fit Parameters
 
 if (SaveParams == 1)
-    writematrix([fitParams_fTS, 0, 0; fitParams_fdotTS, 0, 0; fitParams_SNR, 0, 0; fitParams_Timeng, 0, 0, 0; fitParams_Time2], 'SNRgModelParams.csv');
+    writematrix([fitParams_fTS; fitParams_fdotTS; fitParams_SNR; fitParams_Timeng, 0; fitParams_Time2, 0], 'SNRgModelParams.csv');
 end
