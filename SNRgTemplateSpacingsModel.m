@@ -10,7 +10,7 @@ PlotChiSqrContributions = 0;
 PlotConstFdot = 0;
 CrossTerms = 0;
 SaveParams = 0;
-RainbowLegend = 0;
+RainbowLegend = 1;
 
 hnoise = 12; 
 hamp = 1;
@@ -41,10 +41,10 @@ for j = 1:length(fdotvec_sig)
     Tobsvecs{j} = unique(Data(:, 1));
     Nsegvecs{j} = round(Tobsvecs{j}./Tcoh_hr);
     for k = 1:length(Tobsvecs{j})
-        for i = 1:Nsegvecs{j}(k)
-            X = [X; log10(abs(fdot_sig)), log10(Tobsvecs{j}(k)), log10(i)];
-            dataIndices = logical((Data(:, 2)==i).*(Data(:, 1)==Tobsvecs{j}(k)));
-            assert(sum(dataIndices)==Ntrials, ['Error: Incorrect number of trials for Tobs = ', num2str(Tobsvecs{j}(k)), ' hr and i = ', num2str(i)]);
+        for g = 1:Nsegvecs{j}(k)
+            X = [X; log10(abs(fdot_sig)), log10(Tobsvecs{j}(k)), log10(g)];
+            dataIndices = logical((Data(:, 2)==g).*(Data(:, 1)==Tobsvecs{j}(k)));
+            assert(sum(dataIndices)==Ntrials, ['Error: Incorrect number of trials for Tobs = ', num2str(Tobsvecs{j}(k)), ' hr and i = ', num2str(g)]);
             Y = [Y; log10(mean(Data(dataIndices, 3)))];
             dY = [dY; std(Data(dataIndices, 3))/mean(Data(dataIndices, 3))/log(10)/sqrt(Ntrials)];
         end
@@ -59,9 +59,9 @@ for j = 1:length(fdotvec_sig)
     plane_fitParams(j, :) = nlinfit(X(dataIndices, 2:3), Y(dataIndices), plane_model, -2*rand(1, 3));
     if (ExtraSigma == 1)
         for k = 1:length(Tobsvecs{j})
-            for i = 1:Nsegvecs{j}(k)
-                dataIndex = logical(dataIndices .* (X(:, 3) == log10(i)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
-                sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), i])));
+            for g = 1:Nsegvecs{j}(k)
+                dataIndex = logical(dataIndices .* (X(:, 3) == log10(g)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
+                sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), g])));
                 dY(dataIndex) = sqrt(dY(dataIndex)^2 + (sysSigma/2)^2);
             end
         end
@@ -168,11 +168,11 @@ if (PlotChiSqrContributions == 1)
     for j = 1:length(fdotvec_sig)
         chisqrContributions{j} = zeros(length(Tobsvecs{j}), Nsegvecs{j}(end));
         for k = 1:length(Tobsvecs{j})
-            for i = 1:Nsegvecs{j}(k)
+            for g = 1:Nsegvecs{j}(k)
                 dataIndex = logical( (X(:, 1) == log10(abs(fdotvec_sig(j)))) .* ...
                                      (X(:, 2) == log10(Tobsvecs{j}(k))) .* ...
-                                     (X(:, 3) == log10(i)) );
-                chisqrContributions{j}(k, i) = ((Y(dataIndex) - model_func(fitParams_fTS, X(dataIndex, :)))/dY(dataIndex))^2;
+                                     (X(:, 3) == log10(g)) );
+                chisqrContributions{j}(k, g) = ((Y(dataIndex) - model_func(fitParams_fTS, X(dataIndex, :)))/dY(dataIndex))^2;
             end
         end
     end
@@ -227,10 +227,10 @@ for j = 1:length(fdotvec_sig)
 
     Data = readmatrix(filenameIn);
     for k = 1:length(Tobsvecs{j})
-        for i = 1:Nsegvecs{j}(k)
-            X = [X; log10(abs(fdot_sig)), log10(Tobsvecs{j}(k)), log10(i)];
-            dataIndices = logical((Data(:, 2)==i).*(Data(:, 1)==Tobsvecs{j}(k)));
-            assert(sum(dataIndices)==Ntrials, ['Error: Incorrect number of trials for Tobs = ', num2str(Tobsvecs{j}(k)), ' hr and i = ', num2str(i)]);
+        for g = 1:Nsegvecs{j}(k)
+            X = [X; log10(abs(fdot_sig)), log10(Tobsvecs{j}(k)), log10(g)];
+            dataIndices = logical((Data(:, 2)==g).*(Data(:, 1)==Tobsvecs{j}(k)));
+            assert(sum(dataIndices)==Ntrials, ['Error: Incorrect number of trials for Tobs = ', num2str(Tobsvecs{j}(k)), ' hr and i = ', num2str(g)]);
             Y = [Y; log10(mean(Data(dataIndices, 3)))];
             dY = [dY; std(Data(dataIndices, 3))/mean(Data(dataIndices, 3))/log(10)/sqrt(Ntrials)];
         end
@@ -245,9 +245,9 @@ for j = 1:length(fdotvec_sig)
     plane_fitParams(j, :) = nlinfit(X(dataIndices, 2:3), Y(dataIndices), plane_model, -2*rand(1, 3));
     if (ExtraSigma == 1)
         for k = 1:length(Tobsvecs{j})
-            for i = 1:Nsegvecs{j}(k)
-                dataIndex = logical(dataIndices .* (X(:, 3) == log10(i)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
-                sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), i])));
+            for g = 1:Nsegvecs{j}(k)
+                dataIndex = logical(dataIndices .* (X(:, 3) == log10(g)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
+                sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), g])));
                 dY(dataIndex) = sqrt(dY(dataIndex)^2 + (sysSigma/2)^2);
             end
         end
@@ -351,11 +351,11 @@ if (PlotChiSqrContributions == 1)
     for j = 1:length(fdotvec_sig)
         chisqrContributions{j} = zeros(length(Tobsvecs{j}), Nsegvecs{j}(end));
         for k = 1:length(Tobsvecs{j})
-            for i = 1:Nsegvecs{j}(k)
+            for g = 1:Nsegvecs{j}(k)
                 dataIndex = logical( (X(:, 1) == log10(abs(fdotvec_sig(j)))) .* ...
                                      (X(:, 2) == log10(Tobsvecs{j}(k))) .* ...
-                                     (X(:, 3) == log10(i)) );
-                chisqrContributions{j}(k, i) = ((Y(dataIndex) - model_func(fitParams_fdotTS, X(dataIndex, :)))/dY(dataIndex))^2;
+                                     (X(:, 3) == log10(g)) );
+                chisqrContributions{j}(k, g) = ((Y(dataIndex) - model_func(fitParams_fdotTS, X(dataIndex, :)))/dY(dataIndex))^2;
             end
         end
     end
@@ -410,10 +410,10 @@ for j = 1:length(fdotvec_sig)
         end
         Data = readmatrix(filenameIn);
         assert(height(Data)==Ntrials, ['Error: Incorrect number of trials for Tobs = ', num2str(Tobsvecs{j}(k)), ' hr, fdot = ', fdot_sig, ' Hz/s']);
-        for i = 1:Nsegvecs{j}(k)
-            X = [X; log10(abs(fdot_sig)), log10(Tobsvecs{j}(k)), log10(i)];
-            Y = [Y; log10(mean(Data(:, i)))];
-            dY = [dY; std(Data(:, i))/mean(Data(:, i))/log(10)/sqrt(Ntrials)];
+        for g = 1:Nsegvecs{j}(k)
+            X = [X; log10(abs(fdot_sig)), log10(Tobsvecs{j}(k)), log10(g)];
+            Y = [Y; log10(mean(Data(:, g)))];
+            dY = [dY; std(Data(:, g))/mean(Data(:, g))/log(10)/sqrt(Ntrials)];
         end
     end
 end
@@ -426,9 +426,9 @@ for j = 1:length(fdotvec_sig)
     plane_fitParams(j, :) = nlinfit(X(dataIndices, 2:3), Y(dataIndices), plane_model, -2*rand(1, 3));
     if (ExtraSigma == 1)
         for k = 1:length(Tobsvecs{j})
-            for i = 1:Nsegvecs{j}(k)
-                dataIndex = logical(dataIndices .* (X(:, 3) == log10(i)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
-                sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), i])));
+            for g = 1:Nsegvecs{j}(k)
+                dataIndex = logical(dataIndices .* (X(:, 3) == log10(g)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
+                sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), g])));
                 dY(dataIndex) = sqrt(dY(dataIndex)^2 + (sysSigma/2)^2);
             end
         end
@@ -532,11 +532,11 @@ if (PlotChiSqrContributions == 1)
     for j = 1:length(fdotvec_sig)
         chisqrContributions{j} = zeros(length(Tobsvecs{j}), Nsegvecs{j}(end));
         for k = 1:length(Tobsvecs{j})
-            for i = 1:Nsegvecs{j}(k)
+            for g = 1:Nsegvecs{j}(k)
                 dataIndex = logical( (X(:, 1) == log10(abs(fdotvec_sig(j)))) .* ...
                                      (X(:, 2) == log10(Tobsvecs{j}(k))) .* ...
-                                     (X(:, 3) == log10(i)) );
-                chisqrContributions{j}(k, i) = ((Y(dataIndex) - model_func(fitParams_SNR, X(dataIndex, :)))/dY(dataIndex))^2;
+                                     (X(:, 3) == log10(g)) );
+                chisqrContributions{j}(k, g) = ((Y(dataIndex) - model_func(fitParams_SNR, X(dataIndex, :)))/dY(dataIndex))^2;
             end
         end
     end
@@ -586,10 +586,10 @@ for j = 1:length(fdotvec_sig)
     Tcoh = floor(Tcoh);
     Tcoh_hr = Tcoh/3600.;
     for k = 1:length(Tobsvecs{j})
-        for i = 1:Nsegvecs{j}(k)
-            dataIndices = logical((abs(Data(:, 2)-Tobsvecs{j}(k)) <= 1.e-3) .* (Data(:, 3) == i) .* (abs(Data(:, 1) - fdotvec_sig(j)) <= 1.e-13));
+        for g = 1:Nsegvecs{j}(k)
+            dataIndices = logical((abs(Data(:, 2)-Tobsvecs{j}(k)) <= 1.e-3) .* (Data(:, 3) == g) .* (abs(Data(:, 1) - fdotvec_sig(j)) <= 1.e-13));
             assert(sum(dataIndices) == Ntrials, 'Error: Incorrect number of trials');
-            X = [X; log10(abs(fdot_sig)), log10(Tobsvecs{j}(k)), log10(i)];
+            X = [X; log10(abs(fdot_sig)), log10(Tobsvecs{j}(k)), log10(g)];
             Y = [Y; log10(mean(Data(dataIndices, 4)))];
             dY = [dY; std(Data(dataIndices, 4))/mean(Data(dataIndices, 4))/log(10)/sqrt(sum(dataIndices))];
         end
@@ -605,10 +605,10 @@ for j = 1:length(fdotvec_sig)
         plane_fitParams(j, :) = nlinfit(X(dataIndices, 2:3), Y(dataIndices), plane_model, -2*rand(1, 3));
     end
     for k = 1:length(Tobsvecs{j})
-        for i = 1:Nsegvecs{j}(k)
-            dataIndex = logical(dataIndices .* (X(:, 3) == log10(i)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
+        for g = 1:Nsegvecs{j}(k)
+            dataIndex = logical(dataIndices .* (X(:, 3) == log10(g)) .* (X(:, 2) == log10(Tobsvecs{j}(k))));
             if (sum(dataIndex) > 0)
-                sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), i])));
+                sysSigma = abs(Y(dataIndex) - plane_model(plane_fitParams(j, :), log10([Tobsvecs{j}(k), g])));
                 dY(dataIndex) = sqrt(dY(dataIndex)^2 + (sysSigma/4)^2);
             end
         end
@@ -704,11 +704,11 @@ if (PlotChiSqrContributions == 1)
     for j = 1:length(fdotvec_sig)
         chisqrContributions{j} = zeros(length(Tobsvecs{j}), Nsegvecs{j}(end));
         for k = 1:length(Tobsvecs{j})
-            for i = 1:Nsegvecs{j}(k)
+            for g = 1:Nsegvecs{j}(k)
                 dataIndex = logical( (X(:, 1) == log10(abs(fdotvec_sig(j)))) .* ...
                                      (X(:, 2) == log10(Tobsvecs{j}(k))) .* ...
-                                     (X(:, 3) == log10(i)) );
-                chisqrContributions{j}(k, i) = ((Y(dataIndex) - model_func(fitParams_Time, X(dataIndex, :)))/dY(dataIndex))^2;
+                                     (X(:, 3) == log10(g)) );
+                chisqrContributions{j}(k, g) = ((Y(dataIndex) - model_func(fitParams_Time, X(dataIndex, :)))/dY(dataIndex))^2;
             end
         end
     end
@@ -862,6 +862,7 @@ fprintf('\t(%f +/- %f)\n', fitParams_Time2(3), dParams_Time2(3).d);
 
 fprintf('Chi^2 = %f\n', gof_Time2.chi2);
 fprintf('Chi^2/dof = %f\n\n', gof_Time2.chi2/gof_Time2.dof);
+
 
 %% Save Fit Parameters
 

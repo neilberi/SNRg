@@ -32,7 +32,7 @@ f1 = 10;
 fdot1 = -5.e-5;
 
 % Select observation period and segmentation and based on first fdot
-Tobs_hr = 12;
+Tobs_hr = 4;
 
 Tobs = 3600*Tobs_hr;
 Tcoh = 1/sqrt(2*abs(fdot1));
@@ -42,7 +42,7 @@ Tobs = Tcoh*Nseg;
 Tobs_hr = Tobs/3600;
 
 % Select g that determines spacing
-g = 1000;
+g = 13;
 
 % Load model parameters and calculate f and fdot for next template;
 params = readmatrix('SNRgModelParams.csv');

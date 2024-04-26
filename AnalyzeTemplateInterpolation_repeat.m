@@ -13,13 +13,15 @@ CompS2S2tilde_side = 0;
 CompS1S3_sig = 0;
 CompS2S2tildedots = 0;
 
+Save = 0;
+
 %% Initialize Templates
 
 % Set number of template steps to interpolate
-N_interp = 3;
+N_interp = 9;
 
 % Choose interpolated templates ones to plot 
-plotInds = 2; %[1, round(N_interp/2), N_interp];
+plotInds = 5; %[1, round(N_interp/2), N_interp];
 
 % Set side bin number
 nBinSide = 4;
@@ -29,11 +31,18 @@ f_samp = 32;
 
 % Select initial f and fdot
 f1 = 10;
-fdot1 = -5.e-5;
+%fdot1 = -5.e-6;
+
+for fdot1 = -5.*10.^(-9:-5)
+    if (fdot1 == -5*10^(-9))
+        Tobs_hrvec = [8, 12, 16, 20, 24, 28, 32, 36, 40];
+    else
+        Tobs_hrvec = [4, 16./3, 8, 12, 16, 20, 24. 28, 32];
+    end
+for Tobs_hrSpace = Tobs_hrvec
 
 % Select observation period and segmentation and based on first fdot
-Tobs_hr = 12;
-
+Tobs_hr = 40;
 Tobs = 3600*Tobs_hr;
 Tcoh = 1/sqrt(2*abs(fdot1));
 Tcoh = round(Tcoh);
@@ -41,17 +50,25 @@ Nseg = floor(Tobs/Tcoh);
 Tobs = Tcoh*Nseg;
 Tobs_hr = Tobs/3600;
 
+TobsSpace = 3600*Tobs_hrSpace;
+NsegSpace = floor(TobsSpace/Tcoh);
+TobsSpace = Tcoh*NsegSpace;
+Tobs_hrSpace = TobsSpace/3600;
+
+for g = 1:(2 - (fdot1==-5*10^(-9)) + 13*(fdot1==-5*10^(-5))):NsegSpace
 % Select g that determines spacing
-g = 1000;
+%g = 455;
 
 % Load model parameters and calculate f and fdot for next template;
 params = readmatrix('SNRgModelParams.csv');
 
 TS_func = @(a, Tobs, g, fdot) 10.^( a(1).*log10(Tobs_hr) + a(2).*log10(g) + a(3).*log10(abs(fdot)) + a(4) );
 fdot2 = zeros(1, N_interp);
-fdot2(1) = fdot1 + TS_func(params(2, :), Tobs_hr, g, fdot1);
+%fdot2(1) = fdot1 + TS_func(params(2, :), Tobs_hr, g, fdot1);
+fdot2(1) = fdot1 + TS_func(params(2, :), Tobs_hrSpace, g, fdot1);
 for i = 2:N_interp
-    fdot2(i) = fdot2(i-1) + TS_func(params(2, :), Tobs_hr, g, fdot2(i-1));
+    %fdot2(i) = fdot2(i-1) + TS_func(params(2, :), Tobs_hr, g, fdot2(i-1));
+    fdot2(i) = fdot2(i-1) + TS_func(params(2, :), Tobs_hrSpace, g, fdot2(i-1));
 end
 
 % Calculate band indices and frequencies
@@ -148,7 +165,8 @@ end
 %% Generate third template and linearly interpolate magnitudes and phases between S3 and S1
 
 % Calculate fdot3
-fdot3 = fdot2(end) + TS_func(params(2, :), Tobs_hr, g, fdot2(end));
+%fdot3 = fdot2(end) + TS_func(params(2, :), Tobs_hr, g, fdot2(end));
+fdot3 = fdot2(end) + TS_func(params(2, :), Tobs_hrSpace, g, fdot2(end));
 
 % Calculate S3
 S3 = GenerateTemplateCoeffs(f1, fdot3, Tobs, f_samp, Tcoh, indbandlo, indbandhi);
@@ -347,6 +365,16 @@ for i = 1:N_interp
     for j = 1:2*nBinSide
         dphi2_side{i, j} = phasediff(S_side2_interp{i}(j, :), S_side2{i}(j, :));
     end
+end
+
+maxSeg = find(abs(phasediff(S_sig2_interp{(N_interp+1)/2}, S_sig2{(N_interp+1)/2}))>0.5, 1);
+if (Save)
+    fout = fopen(sprintf('MaxSegInterp%d.csv', (N_interp+1)/2), 'a');
+    fprintf(fout, '%e, %e, %e, %e\n', fdot1, Tobs_hrSpace, g, maxSeg);
+end
+
+end
+end
 end
 
 

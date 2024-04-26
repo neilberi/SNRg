@@ -27,7 +27,7 @@ TS = 'fdot'; % Choose 'f' or 'fdot'
 
 % {SNRg | M<=g<=N} will be calculated
 M = 1;
-N = 5;
+N = 1;
 Ntrial = 10;
 if (OutputFile1 == 0 && OutputFile4 == 0)
     Ntrial = 1;
@@ -52,10 +52,10 @@ hamp = 1;
 f_sig = 10.;
 
 % Signal frequency derivative (Hz/s)
-fdot_sig = -5.e-8;
+fdot_sig = -5.e-6;
 
 % Length of observation (hr)
-Tobs_hr = 4.;
+Tobs_hr = 24.;
 Tobs = Tobs_hr * 3600.;
 
 % Coherence time (hr) - choose so that signal drifts 0.5 bin per coherence time
