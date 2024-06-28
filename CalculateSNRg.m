@@ -112,7 +112,7 @@ if (strcmp(TS, 'f'))
     fvec = (f_sig - searchScale*fStepSize):fStepSize:(f_sig + searchScale*fStepSize);
     fdotvec = fdot_sig;
     SNRgArray = zeros(N-M+1, length(fvec));
-else
+else 
     fvec = f_sig;
     fdotvec = (fdot_sig - searchScale*fdotStepSize):fdotStepSize:(fdot_sig + searchScale*fdotStepSize);
     SNRgArray = zeros(N-M+1, length(fdotvec));

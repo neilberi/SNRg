@@ -5,12 +5,12 @@ clc;
 close all;
 
 ParsevalSNR = 1;
-TS = 'f'; % Choose f or fdot
+TS = 'fdot'; % Choose f or fdot
 
 %% Read Data
 % Choose frequency derivative (Hz/s), observation time (hr)
-fdot_sig = -5.e-5;
-Tobs_hr = 32.;
+fdot_sig = -5.e-6;
+Tobs_hr = 24.;
 
 % Read in data and assign to variables
 if (strcmp(TS, 'f'))
@@ -30,18 +30,18 @@ data = readmatrix(filename);
 
 step_sizes = data(:, 1);
 templateSpacings = data(:, 2:end);
-ivec = 1:length(templateSpacings(1, :));
+gvec = 1:length(templateSpacings(1, :));
 
 % Choose grouping number for plot
-i = ivec(end); %2.37342e-4 to 30, 4.94462e-6 to end
+g = gvec(15);
 
 %% Plot SNRg Template Spacing vs Step Size 
 
 % Plot 
 figure(1)
-sk = scatter(step_sizes, templateSpacings(:, i), '*k');
+sk = scatter(step_sizes, templateSpacings(:, g), '*k');
 sk.LineWidth = 3;
-title(['SNRg_{', num2str(i), '} Template Spacing vs Step Size']);
+title(['SNRg_{', num2str(g), '} Template Spacing vs Step Size']);
 if (strcmp(TS, 'f'))
     xlabel('f Step Size (Hz)');
     ylabel('f Template Spacing (Hz)')

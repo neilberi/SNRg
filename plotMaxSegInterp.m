@@ -32,11 +32,11 @@ end
 rainbowsc = {0.5*[1, 0, 0], 0.5*[1, 1, 0], 0.5*[0, 1, 0], 0.5*[0, 0, 1], 0.5*[1, 0, 1]};
 rainbowsf = {'red', 'yellow', 'green', 'blue', 'magenta'};
 
-LSQ = [log(abs(Data(:, 1:3))), ones(height(Data), 1)];
-[param, dparam] = lscov(LSQ, log(Data(:, 4)));
+LSQ = [log10(abs(Data(:, 1:3))), ones(height(Data), 1)];
+[param, dparam] = lscov(LSQ, log10(Data(:, 4)));
 
 [Tobsmat, gmat] = meshgrid(logspace(log10(1), log10(40), 100), logspace(log10(1), log10(1200), 100));
-model_func = @(a, fdot, Tobs_hr, g) (abs(fdot).^a(1)).*(abs(Tobs_hr).^a(2)).*(abs(g).^a(3)).*exp(a(4));
+model_func = @(a, fdot, Tobs_hr, g) (abs(fdot).^a(1)).*(abs(Tobs_hr).^a(2)).*(abs(g).^a(3)).*10.^a(4);
 
 % Plot segments
 sc = cell(length(fdotvec), 1);
